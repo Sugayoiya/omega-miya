@@ -1342,6 +1342,16 @@ docs = ["docutils", "sphinx (>=5.0)"]
 test = ["pyannotate", "pytest"]
 
 [[package]]
+name = "jieba"
+version = "0.42.1"
+description = "Chinese Words Segmentation Utilities"
+optional = false
+python-versions = "*"
+files = [
+    { file = "jieba-0.42.1.tar.gz", hash = "sha256:055ca12f62674fafed09427f176506079bc135638a14e23e25be909131928db2" },
+]
+
+[[package]]
 name = "jinja2"
 version = "3.1.4"
 description = "A very fast and expressive template engine."
@@ -2420,6 +2430,16 @@ mic = ["olefile"]
 tests = ["check-manifest", "coverage", "defusedxml", "markdown2", "olefile", "packaging", "pyroma", "pytest", "pytest-cov", "pytest-timeout"]
 typing = ["typing-extensions"]
 xmp = ["defusedxml"]
+
+[[package]]
+name = "pinyin"
+version = "0.4.0"
+description = "Translate chinese chars to pinyin based on Mandarin.dat"
+optional = false
+python-versions = "*"
+files = [
+    { file = "pinyin-0.4.0.tar.gz", hash = "sha256:8842ae53cb7a81c8c3ec03d1cd7dba9aedb20d8d6962aebc620fad74da0868f5" },
+]
 
 [[package]]
 name = "psutil"
@@ -4064,4 +4084,4 @@ sqlite = ["aiosqlite"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "24453f66b22c1d45081dd76c645d8e0da986c688f506af91b2fdc249d0870cb9"
+content-hash = "d80c799db96241b358b51643e31e870d804f6fb4ebdb37e4c80c750c6b45883d"
