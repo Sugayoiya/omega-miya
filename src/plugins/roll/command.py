@@ -20,8 +20,8 @@ from src.service import OmegaInterface, enable_processor_state
 
 
 @on_command(
-    'Roll',
-    aliases={'roll'},
+    'roll',
+    aliases={'rd'},
     handlers=[get_command_str_single_arg_parser_handler('expression')],
     priority=10,
     block=True,

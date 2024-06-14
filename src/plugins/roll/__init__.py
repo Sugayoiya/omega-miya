@@ -16,12 +16,11 @@ __plugin_meta__ = PluginMetadata(
     description='【骰子插件】\n'
                 '各种姿势的掷骰子',
     usage='/roll num\n'
-          '/roll AdB(kq)C(pb)DaE\n'
-          '/rd\n'
-          '/ra\n'
-          '/r(bp)',
+          '/roll d<num>\n'
+          '/rd num\n'
+          '/rd <num>d<num>',
     extra={'author': 'Ailitonia'},
-)  # TODO 开发中
+)
 
 
 from . import command as command
