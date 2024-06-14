@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3322:3322"
+    volumes:
+      - .:/app
+    restart: always
