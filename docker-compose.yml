@@ -6,4 +6,5 @@ services:
       - "3322:3322"
     volumes:
       - .:/app
+    network_mode: bridge
     restart: always
