@@ -1,13 +1,3 @@
-"""
-@Author         : Ailitonia
-@Date           : 2023/7/9 1:09
-@FileName       : command
-@Project        : nonebot2_miya
-@Description    : 签到命令
-@GitHub         : https://github.com/Ailitonia
-@Software       : PyCharm
-"""
-
 from nonebot.plugin import MatcherGroup
 
 from src.service import enable_processor_state
