@@ -1,5 +1,4 @@
 import difflib
-import json
 import random
 from io import BytesIO
 from typing import Any, Optional

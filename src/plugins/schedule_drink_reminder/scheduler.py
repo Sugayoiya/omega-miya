@@ -21,7 +21,7 @@ scheduler.add_job(
     # day_of_week=None,
     hour="8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23",
     # minute='*/1',
-    second='*/5',
+    # second='*/5',
     # start_date=None,
     # end_date=None,
     # timezone=None,
