@@ -12,28 +12,13 @@ from .config import eat_config, eat_local_resource_config
 
 
 async def download_resource_url(name: str) -> Optional[Dict[str, Any]]:
-    url: str = "https://raw.githubusercontent.com/MinatoAquaCrews/nonebot_plugin_what2eat/master/nonebot_plugin_what2eat/resource/" + name
+    url: str = "https://raw.githubusercontent.com/Sugayoiya/omega-miya/dev/static/docs/what_eat/" + name
 
     response = await OmegaRequests(timeout=30).get(url)
     if response.status_code != 200:
         logger.warning(f"Error occured when downloading {url}")
         return None
     return OmegaRequests.parse_content_json(response)
-    # async with httpx.AsyncClient() as client:
-    #     for i in range(3):
-    #         try:
-    #             response = await client.get(url)
-    #             if response.status_code != 200:
-    #                 continue
-    #
-    #             return response.json()
-    #
-    #         except Exception:
-    #             logger.warning(
-    #                 f"Error occured when downloading {url}, retry: {i+1}/3")
-    #
-    # logger.warning("Abort downloading")
-    # return None
 
 
 def _load_config(file: TemporaryResource) -> Optional[Dict[str, Any]]:
