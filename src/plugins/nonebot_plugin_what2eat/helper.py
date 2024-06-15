@@ -71,7 +71,7 @@ class EatingManager:
         return "\n".join(choice_list)
 
     def get2eat(self) -> str:
-        return "建议 " + self.get_percentage_item_str(self._dishes["basic_food"])
+        return "建议\n" + self.get_percentage_item_str(self._dishes["basic_food"])
 
     def get2drink(self) -> str:
         # _branch, _drink = self.pick_one_drink()
@@ -98,7 +98,7 @@ class EatingManager:
         for i in list(zip(select_drink_list, percent_int)):
             choice_list.append(i[0] + " " + str(i[1]) + "%")
 
-        return "建议 " + "\n ".join(choice_list)
+        return "建议\n" + "\n ".join(choice_list)
 
 
 eating_manager = EatingManager()
