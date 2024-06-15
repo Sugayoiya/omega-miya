@@ -1,7 +1,5 @@
 from nonebot.plugin import PluginMetadata
 
-from .helper import eating_manager
-
 __what2eat_version__ = "v0.2.5"
 __what2eat_usages__ = f'''
 今天吃什么？ {__what2eat_version__}
