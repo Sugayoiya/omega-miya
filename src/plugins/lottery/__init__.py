@@ -11,7 +11,7 @@
 from nonebot.plugin import PluginMetadata
 
 __plugin_meta__ = PluginMetadata(
-    name='Lottery',
+    name='群抽奖',
     description='【抽奖插件】\n'
                 '抽群友',
     usage='/lottery <num>\n'

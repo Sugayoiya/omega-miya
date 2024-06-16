@@ -22,10 +22,8 @@ from nonebot.typing import T_State
 from src.database import PluginDAL
 from src.params.permission import IS_ADMIN
 from src.service import OmegaInterface, enable_processor_state
-
 from .helpers import get_all_plugins_desc, get_plugin_desc, get_plugin_auth_node, list_command_by_priority
 from .status import get_status
-
 
 DEFAULT_PERMISSION_LEVEL: int = 30
 """初始化时默认的权限等级"""
@@ -35,11 +33,11 @@ MAX_PERMISSION_LEVEL: int = 100
 
 # 注册事件响应器
 omega = CommandGroup(
-    'omega',
+    'bot',
     permission=SUPERUSER,
     priority=20,
     block=True,
-    state=enable_processor_state(name='OmegaCoreManager', enable_processor=False)
+    state=enable_processor_state(name='botCoreManager', enable_processor=False)
 )
 
 
