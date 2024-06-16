@@ -22,8 +22,7 @@ __plugin_meta__ = PluginMetadata(
     extra={'author': 'Ailitonia'},
 )
 
-
-from . import command as command
+# from . import command as command
 
 
 __all__ = []
