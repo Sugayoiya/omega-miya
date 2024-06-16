@@ -9,7 +9,7 @@ __drink_reminder__ = f'''
 [关闭喝水小助手]    关闭群喝水小助手'''.strip()
 
 __plugin_meta__ = PluginMetadata(
-    name='喝水小助手',
+    name='drink_reminder',
     description='提醒喝水小助手',
     usage=f'{__drink_reminder__}',
     extra={'author': 'sugayoiya'},
