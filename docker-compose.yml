@@ -9,3 +9,7 @@ services:
     networks:
       - nas-docker
     restart: always
+
+networks:
+  nas-docker:
+    external: true
