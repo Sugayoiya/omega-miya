@@ -45,7 +45,7 @@ session = {}
     handlers=[get_command_str_single_arg_parser_handler('chat_msg')],
     priority=15,
     block=True,
-    state=enable_processor_state(name='chat', level=10, cooldown=2),
+    state=enable_processor_state(name='chat', level=10, cooldown=5),
 ).got('chat_msg', prompt='有啥想说的?')
 async def _(event: MessageEvent, msg: Annotated[str, ArgStr('chat_msg')]):
     interface = OmegaInterface()
