@@ -22,7 +22,7 @@ pokemon_fusion = MatcherGroup(
 @on_command(
     '融合',
     aliases={'宝可梦融合'},
-    handlers=[get_command_str_single_arg_parser_handler('guess_word')],
+    handlers=[get_command_str_single_arg_parser_handler('pokemons')],
     priority=10,
     block=True,
     state=enable_processor_state(name='pokemon_fusion', level=20),

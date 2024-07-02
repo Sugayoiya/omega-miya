@@ -4,7 +4,8 @@ __pokemon_fusion_version__ = "v0.2.5"
 __pokemon_fusion_usages__ = f'''
 宝可梦融合! {__pokemon_fusion_version__}
 /融合 宝可梦1+宝可梦2
-/宝可梦融合 宝可梦1+宝可梦2'''.strip()
+/宝可梦融合 宝可梦1+宝可梦2
+/宝可梦融合 宝可梦1 宝可梦1随机融合'''.strip()
 
 __plugin_meta__ = PluginMetadata(
     name="宝可梦融合",
