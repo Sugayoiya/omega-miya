@@ -8,7 +8,7 @@ eat = MatcherGroup(
     type='message',
     priority=10,
     block=True,
-    state=enable_processor_state(name='eat', level=20, auth_node='eat', echo_processor_result=False),
+    state=enable_processor_state(name='eat', echo_processor_result=False),
 )
 
 eat.on_command('今天吃什么', handlers=[what2eat])
