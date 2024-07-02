@@ -6,7 +6,6 @@ services:
       - "3322:3322"
     volumes:
       - .:/app
-    network_mode: bridge
     networks:
       - nas-docker
     restart: always
