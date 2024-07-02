@@ -1,0 +1,16 @@
+from nonebot.plugin import PluginMetadata
+
+__plugin_meta__ = PluginMetadata(
+    name='llm聊天bot',
+    description="具有上下文关联和多模态识别(todo)，适配OneAPI和OpenAI官方的nonebot插件。",
+    usage="""
+    @bot发送问题时机器人不具有上下文回复的能力
+    /chat 使用该命令进行问答时，bot具有上下文回复的能力
+    /clear 清除当前的聊天记录
+    """,
+    extra={'author': 'sugayoiya'},
+)
+
+from . import command as command
+
+__all__ = []
