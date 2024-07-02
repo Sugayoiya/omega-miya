@@ -8,16 +8,16 @@
 @Software       : PyCharm
 """
 
+import random
+
+from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent
+from nonebot.adapters.onebot.v11.permission import GROUP
 from nonebot.exception import FinishedException
 from nonebot.matcher import Matcher
 from nonebot.plugin import on_message
 
-from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent
-from nonebot.adapters.onebot.v11.permission import GROUP
-
 from src.params.rule import event_has_permission_level
 from src.service import enable_processor_state
-
 
 LAST_MSG: dict[int, str] = {}
 """记录上一条收到的消息"""
@@ -78,7 +78,9 @@ async def handle_repeater(event: GroupMessageEvent, matcher: Matcher):
             REPEAT_COUNT[group_id] = 0
             LAST_MSG[group_id] = ''
             LAST_REPEAT_MSG[group_id] = raw_msg
-            await matcher.send(message)
+            # 1/10概率复读
+            if random.randint(1, 10) == 1:
+                await matcher.send(message)
 
 
 __all__ = []
