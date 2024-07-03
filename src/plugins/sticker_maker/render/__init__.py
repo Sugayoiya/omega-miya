@@ -8,17 +8,17 @@
 @Software       : PyCharm 
 """
 
-import numpy
-from typing import Type, Any
 from datetime import date
 from io import BytesIO
+from typing import Type, Any
+
+import numpy
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 
 from src.resource import TemporaryResource
 from src.service import OmegaRequests
 from src.utils.image_utils import ImageUtils
 from src.utils.tencent_cloud_api import TencentTMT
-
 from .consts import STATIC_RESOURCE, FONT_RESOURCE, TMP_PATH
 from .model import StickerRender
 
@@ -151,19 +151,19 @@ class PhlogoRender(StickerRender):
         font = ImageFont.truetype(self._font.resolve_path, self._default_font_size)
 
         # 分别确定两个边文字的大小
-        w_text_width, w_text_height = font.getsize(white_text)
-        y_text_width, y_text_height = font.getsize(yellow_text)
+        w_text_width, w_text_height = ImageUtils.get_text_size(text=white_text, font=font)
+        y_text_width, y_text_height = ImageUtils.get_text_size(text=yellow_text, font=font)
 
         # 生成图片定长 两部分文字之间间隔及两侧留空为固定值三个空格大小
-        split_width, split_height = font.getsize(' ' * 1)
+        split_width, split_height = ImageUtils.get_text_size(text='o', font=font)
         image_width_ = w_text_width + y_text_width + int(split_width * 5.5)
         image_height_ = w_text_height + int(split_height * 1.25)
 
         # 计算黄色圆角矩形所在位置
         y_r_rectangle_x0 = w_text_width + int(split_width * 2.5)
-        y_r_rectangle_y0 = split_height // 2
+        y_r_rectangle_y0 = split_height // 4
         y_r_rectangle_x1 = image_width_ - int(split_width * 2)
-        y_r_rectangle_y1 = image_height_ - split_height // 2
+        y_r_rectangle_y1 = image_height_ - split_height // 4
 
         # 生成背景层
         background = Image.new(mode='RGB', size=(image_width_, image_height_), color=(0, 0, 0))
@@ -493,12 +493,12 @@ class LittleAngelRender(StickerRender):
         font_size_up = int(image.width / 7)
         font_up = ImageFont.truetype(self._font.resolve_path, font_size_up)
         text_up = f'请问你们看到{self.text}了吗?'
-        text_up_w, text_up_h = font_up.getsize(text_up)
+        text_up_w, text_up_h = ImageUtils.get_text_size(text_up, font_up)
         # 自适应处理文字大小
         while text_up_w >= int(image.width * 1.14):
             font_size_up -= 1
             font_up = ImageFont.truetype(self._font.resolve_path, font_size_up)
-            text_up_w, text_up_h = font_up.getsize(text_up)
+            text_up_w, text_up_h = ImageUtils.get_text_size(text_up, font_up)
 
         # 处理图片
         background = Image.new(mode='RGB',
