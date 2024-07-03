@@ -33,7 +33,7 @@ from src.utils.process_utils import semaphore_gather
     handlers=[get_command_str_single_arg_parser_handler('image_url', ensure_key=True)],
     priority=10,
     block=True,
-    state=enable_processor_state(name='ImageSearcher', level=50)
+    state=enable_processor_state(name='ImageSearcher', level=10)
 ).got('image_url')
 async def handle_search_image(
         cmd: Annotated[str | None, RawCommand()],
