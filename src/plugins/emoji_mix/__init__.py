@@ -4,7 +4,8 @@ __plugin_meta__ = PluginMetadata(
     name='emoji合成',
     description='【emoji合成】\n'
                 '😀+😀=?',
-    usage='直接发送 emoji+emoji 即可',
+    usage='直接发送 emoji+emoji \n'
+          '或使用 /emoji合成 随机合成一个emoji',
     extra={'author': 'sugayoiya'},
 )
 
