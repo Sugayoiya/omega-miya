@@ -23,8 +23,9 @@ RUN poetry install --all-extras
 # Run your app
 COPY . /app
 EXPOSE 3322
-CMD ["poetry", "run", "python3", "bot.py"]
-
 # run lagrange
 # nohup ./Lagrange.OneBot >> ./output.log 2>&1 &
-CMD {"nohup", "/app/lagrange/publish/Lagrange.OneBot", ">>", "./output.log", "2>&1", "&"}
+CMD {"nohup", "/app/lagrange/publish/Lagrange.OneBot", ">>", "/app/lagrange/publish/output.log", "2>&1", "&"}
+# run bot
+CMD ["poetry", "run", "python3", "bot.py"]
+
