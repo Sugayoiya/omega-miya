@@ -27,4 +27,4 @@ CMD ["poetry", "run", "python3", "bot.py"]
 
 # run lagrange
 # nohup ./Lagrange.OneBot >> ./output.log 2>&1 &
-CMD {"nohup", "./Lagrange.OneBot", ">>", "./output.log", "2>&1", "&"}
+CMD {"nohup", "/app/lagrange/publish/Lagrange.OneBot", ">>", "./output.log", "2>&1", "&"}
