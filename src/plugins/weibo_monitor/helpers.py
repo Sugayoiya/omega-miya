@@ -8,22 +8,21 @@
 @Software       : PyCharm 
 """
 
-from sqlalchemy.exc import NoResultFound
 from typing import Iterable
 
 from nonebot import logger
 from nonebot.adapters import Message
 from nonebot.exception import ActionFailed
+from sqlalchemy.exc import NoResultFound
 
 from src.database import WeiboDetailDAL, begin_db_session
 from src.database.internal.entity import Entity
 from src.database.internal.subscription_source import SubscriptionSource, SubscriptionSourceType
 from src.service import OmegaInterface, OmegaEntity, OmegaMessageSegment
 from src.service.omega_base.internal import OmegaWeiboUserSubSource
+from src.utils.process_utils import run_async_delay, semaphore_gather
 from src.utils.weibo_api import Weibo
 from src.utils.weibo_api.model import WeiboCard
-from src.utils.process_utils import run_async_delay, semaphore_gather
-
 
 WEIBO_SUB_TYPE: str = SubscriptionSourceType.weibo_user.value
 """微博用户订阅类型"""
@@ -143,8 +142,8 @@ async def _format_weibo_update_message(card: WeiboCard) -> str | Message:
         text = f'“{card.mblog.text}”\n'
         if card.mblog.pics is not None:
             img_urls.extend(x.large.url for x in card.mblog.pics)
-        if card.mblog.page_info is not None:
-            img_urls.append(card.mblog.page_info.pic_url)
+        # if card.mblog.page_info is not None:
+        #     img_urls.append(card.mblog.page_info.pic_url)
 
     # 添加发布来源和内容
     send_message += f'{card.mblog.format_created_at} 来自{card.mblog.source}\n'
