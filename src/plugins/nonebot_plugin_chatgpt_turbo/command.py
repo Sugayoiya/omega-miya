@@ -213,7 +213,7 @@ async def _(event: GroupMessageEvent, msg: Annotated[str, ArgStr('chat_msg')]):
 
     if not img_url:
         try:
-            g_session[session_id].append({"role": "user", "content": content})
+            check_session_length(session_id, "user", content)
             response = await client.chat.completions.create(
                 model=model_id,
                 messages=g_session[session_id],
@@ -222,9 +222,30 @@ async def _(event: GroupMessageEvent, msg: Annotated[str, ArgStr('chat_msg')]):
         except Exception as error:
             await interface.send_at_sender(str(error))
             g_session_lock[session_lock] = False
-        await interface.send_at_sender(MessageSegment.text(str(response.choices[0].message.content)))
-        g_session_lock[session_lock] = False
+        try:
+            assistant_res = str(response.choices[0].message.content)
+            check_session_length(session_id, "assistant", assistant_res)
+            await interface.send_at_sender(MessageSegment.text(str(response.choices[0].message.content)))
+            g_session_lock[session_lock] = False
+        except Exception as error:
+            await interface.send_at_sender(str(error))
+            g_session_lock[session_lock] = False
         return
+
+
+# check session 中某个 id 的所有context的长度, 如果超过 128K 则移除最早的context，直到加入最新的 context 后小于 128K
+def check_session_length(session_id, role, context):
+    total_length = 0
+    if g_session[session_id] is None:
+        g_session[session_id] = []
+        g_session[session_id].append({"role": role, "content": context})
+    else:
+        g_session[session_id].append({"role": role, "content": context})
+        for i in g_session[session_id]:
+            total_length += len(i['content'])
+        while total_length > 128000:
+            pop = g_session[session_id].pop(0)
+            total_length -= len(pop['content'])
 
 
 @on_command(
