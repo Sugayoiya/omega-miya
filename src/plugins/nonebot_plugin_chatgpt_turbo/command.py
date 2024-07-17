@@ -38,6 +38,8 @@ model_id = plugin_config.api_model
 
 # public = plugin_config.chatgpt_turbo_public
 session = {}
+g_session = {}
+g_session_lock = {}
 
 
 @on_command(
@@ -56,9 +58,7 @@ async def _(event: MessageEvent, msg: Annotated[str, ArgStr('chat_msg')]):
     img_url = helpers.extract_image_urls(event.message)
     if content == "" or content is None:
         await interface.finish(MessageSegment.text("内容不能为空哦～"), at_sender=True)
-    # await interface.send(
-    #     MessageSegment.text("思考中......"), at_sender=True
-    # )
+
     session_id = event.get_session_id()
     if session_id not in session:
         session[session_id] = []
@@ -128,9 +128,7 @@ async def _(event: GroupMessageEvent):
     content = event.get_plaintext()
     if content == "" or content is None:
         await interface.finish(MessageSegment.text("内容不能为空哦～"), at_sender=True)
-    # await interface.send(
-    #     MessageSegment.text("思考中......"), at_sender=True
-    # )
+
     if not img_url:
         try:
             response = await client.chat.completions.create(
@@ -181,4 +179,69 @@ async def _(event: MessageEvent):
     interface = OmegaInterface()
     await interface.finish(
         MessageSegment.text("成功清除历史记录！"), at_sender=True
+    )
+
+
+@on_command(
+    'gchat',
+    handlers=[get_command_str_single_arg_parser_handler('chat_msg')],
+    priority=15,
+    block=True,
+    state=enable_processor_state(name='chat', level=10, cooldown=5),
+).got('chat_msg', prompt='有啥想说的?')
+async def _(event: GroupMessageEvent, msg: Annotated[str, ArgStr('chat_msg')]):
+    interface = OmegaInterface()
+    # 若未开启私聊模式则检测到私聊就结束
+    if isinstance(event, PrivateMessageEvent) and not plugin_config.enable_private_chat:
+        interface.finish("对不起，私聊暂不支持此功能。")
+
+    session_id = str(event.group_id)
+    session_lock = session_id
+    if g_session_lock.get(session_lock, False):
+        await interface.finish(MessageSegment.text("上一条群接龙还未结束，请稍后再试！"), at_sender=True)
+    g_session_lock[session_lock] = True
+
+    content = msg.strip()
+    img_url = helpers.extract_image_urls(event.message)
+    if content == "" or content is None:
+        await interface.send_at_sender(MessageSegment.text("内容不能为空哦～"))
+        g_session_lock[session_lock] = False
+        return
+
+    if session_id not in g_session:
+        g_session[session_id] = []
+
+    if not img_url:
+        try:
+            g_session[session_id].append({"role": "user", "content": content})
+            response = await client.chat.completions.create(
+                model=model_id,
+                messages=g_session[session_id],
+                stream=False
+            )
+        except Exception as error:
+            await interface.send_at_sender(str(error))
+            g_session_lock[session_lock] = False
+        await interface.send_at_sender(MessageSegment.text(str(response.choices[0].message.content)))
+        g_session_lock[session_lock] = False
+        return
+
+
+@on_command(
+    'gclear',
+    priority=15,
+    block=True,
+    state=enable_processor_state(name='chat', level=10),
+).handle()
+async def _(event: GroupMessageEvent):
+    session_id = str(event.group_id)
+    try:
+        del g_session[session_id]
+        del g_session_lock[session_id]
+    except Exception as error:
+        g_session[session_id] = []
+        g_session_lock[session_id] = False
+    interface = OmegaInterface()
+    await interface.finish(
+        MessageSegment.text("成功清除群接龙历史记录！"), at_sender=True
     )
