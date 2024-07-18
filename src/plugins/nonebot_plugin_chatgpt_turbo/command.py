@@ -1,7 +1,5 @@
-import base64
 from typing import Annotated
 
-import httpx
 import nonebot
 from nonebot import on_command
 from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent
@@ -38,8 +36,55 @@ model_id = plugin_config.api_model
 
 # public = plugin_config.chatgpt_turbo_public
 session = {}
-g_session = {}
-g_session_lock = {}
+session_lock = {}
+
+
+async def chat_handle(event: MessageEvent, msg: str, session_id: str = None):
+    interface = OmegaInterface()
+
+    if session_id is not None:
+        pass
+    elif isinstance(event, GroupMessageEvent):
+        session_id = str(event.get_session_id())
+    elif isinstance(event, PrivateMessageEvent):
+        session_id = 'private_chat_' + str(event.get_session_id())
+
+    if session_lock.get(session_id, False):
+        await interface.finish("上一条消息还未处理完毕，请稍后再试！", at_sender=True)
+
+    # 简单锁
+    session_lock[session_id] = True
+
+    content = msg.strip()
+    # 多模态 to do
+    img_url = helpers.extract_image_urls(event.message)
+    if content == "" or content is None:
+        session_lock[session_id] = False
+        await interface.finish(MessageSegment.text("内容不能为空哦～"), at_sender=True)
+
+    # 初始化
+    if session.get(session_id) is None:
+        session[session_id] = []
+
+    try:
+        check_session_length(session_id, "user", content)
+        response = await client.chat.completions.create(
+            model=model_id,
+            messages=session[session_id],
+            stream=False
+        )
+    except Exception as error:
+        session_lock[session_id] = False
+        await interface.finish(str(error), at_sender=True)
+    try:
+        assistant_res = str(response.choices[0].message.content)
+        check_session_length(session_id, "assistant", assistant_res)
+        session_lock[session_id] = False
+    except Exception as error:
+        session_lock[session_id] = False
+        await interface.finish(str(error), at_sender=True)
+
+    await interface.finish(MessageSegment.text(assistant_res), at_sender=True)
 
 
 @on_command(
@@ -54,52 +99,8 @@ async def _(event: MessageEvent, msg: Annotated[str, ArgStr('chat_msg')]):
     # 若未开启私聊模式则检测到私聊就结束
     if isinstance(event, PrivateMessageEvent) and not plugin_config.enable_private_chat:
         interface.finish("对不起，私聊暂不支持此功能。")
-    content = msg.strip()
-    img_url = helpers.extract_image_urls(event.message)
-    if content == "" or content is None:
-        await interface.finish(MessageSegment.text("内容不能为空哦～"), at_sender=True)
 
-    session_id = event.get_session_id()
-    if session_id not in session:
-        session[session_id] = []
-
-    if not img_url:
-        try:
-            session[session_id].append({"role": "user", "content": content})
-            response = await client.chat.completions.create(
-                model=model_id,
-                messages=session[session_id],
-                stream=False
-            )
-        except Exception as error:
-            await interface.finish(str(error), at_sender=True)
-        await interface.finish(
-            MessageSegment.text(str(response.choices[0].message.content)),
-            at_sender=True,
-        )
-    else:
-        try:
-            image_data = base64.b64encode(httpx.get(img_url[0]).content).decode("utf-8")
-            session[session_id].append(
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": content},
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:image/png;base64,{image_data}"},
-                        },
-                    ],
-                }
-            )
-            response = await client.chat.completions.create(
-                model=model_id, messages=session[session_id]
-            )
-        except Exception as error:
-            await interface.finish(str(error), at_sender=True)
-        await interface.finish(
-            MessageSegment.text(response.choices[0].message.content), at_sender=True
-        )
+    await chat_handle(event, msg)
 
 
 async def handle_ignore_msg(bot: Bot, event: GroupMessageEvent):
@@ -129,43 +130,18 @@ async def _(event: GroupMessageEvent):
     if content == "" or content is None:
         await interface.finish(MessageSegment.text("内容不能为空哦～"), at_sender=True)
 
-    if not img_url:
-        try:
-            response = await client.chat.completions.create(
-                model=model_id,
-                messages=[{"role": "user", "content": content}],
-            )
-        except Exception as error:
-            await interface.finish(str(error), at_sender=True)
-        await interface.finish(
-            MessageSegment.text(str(response.choices[0].message.content)),
-            at_sender=True,
+    try:
+        response = await client.chat.completions.create(
+            model=model_id,
+            messages=[{"role": "user", "content": content}],
+            stream=False
         )
-    else:
-        try:
-            image_data = base64.b64encode(httpx.get(img_url[0]).content).decode("utf-8")
-            response = await client.chat.completions.create(
-                model=model_id,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": content},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/png;base64,{image_data}"
-                                },
-                            },
-                        ],
-                    }
-                ],
-            )
-        except Exception as error:
-            await interface.finish(str(error), at_sender=True)
-        await interface.finish(
-            MessageSegment.text(response.choices[0].message.content), at_sender=True
-        )
+    except Exception as error:
+        await interface.finish(str(error), at_sender=True)
+    await interface.finish(
+        MessageSegment.text(str(response.choices[0].message.content)),
+        at_sender=True,
+    )
 
 
 @on_command(
@@ -192,59 +168,24 @@ async def _(event: MessageEvent):
 async def _(event: GroupMessageEvent, msg: Annotated[str, ArgStr('chat_msg')]):
     interface = OmegaInterface()
     # 若未开启私聊模式则检测到私聊就结束
-    if isinstance(event, PrivateMessageEvent) and not plugin_config.enable_private_chat:
-        interface.finish("对不起，私聊暂不支持此功能。")
+    if isinstance(event, PrivateMessageEvent):
+        interface.finish("直接使用/chat <想要发送的内容> 即可哦～")
 
-    session_id = str(event.group_id)
-    session_lock = session_id
-    if g_session_lock.get(session_lock, False):
-        await interface.finish(MessageSegment.text("上一条群接龙还未结束，请稍后再试！"), at_sender=True)
-    g_session_lock[session_lock] = True
-
-    content = msg.strip()
-    img_url = helpers.extract_image_urls(event.message)
-    if content == "" or content is None:
-        await interface.send_at_sender(MessageSegment.text("内容不能为空哦～"))
-        g_session_lock[session_lock] = False
-        return
-
-    if session_id not in g_session:
-        g_session[session_id] = []
-
-    if not img_url:
-        try:
-            check_session_length(session_id, "user", content)
-            response = await client.chat.completions.create(
-                model=model_id,
-                messages=g_session[session_id],
-                stream=False
-            )
-        except Exception as error:
-            await interface.send_at_sender(str(error))
-            g_session_lock[session_lock] = False
-        try:
-            assistant_res = str(response.choices[0].message.content)
-            check_session_length(session_id, "assistant", assistant_res)
-            await interface.send_at_sender(MessageSegment.text(str(response.choices[0].message.content)))
-            g_session_lock[session_lock] = False
-        except Exception as error:
-            await interface.send_at_sender(str(error))
-            g_session_lock[session_lock] = False
-        return
+    await chat_handle(event, msg, session_id='gchat_' + str(event.group_id))
 
 
 # check session 中某个 id 的所有context的长度, 如果超过 128K 则移除最早的context，直到加入最新的 context 后小于 128K
 def check_session_length(session_id, role, context):
     total_length = 0
-    if g_session[session_id] is None:
-        g_session[session_id] = []
-        g_session[session_id].append({"role": role, "content": context})
+    if session[session_id] is None:
+        session[session_id] = []
+        session[session_id].append({"role": role, "content": context})
     else:
-        g_session[session_id].append({"role": role, "content": context})
-        for i in g_session[session_id]:
+        session[session_id].append({"role": role, "content": context})
+        for i in session[session_id]:
             total_length += len(i['content'])
         while total_length > 128000:
-            pop = g_session[session_id].pop(0)
+            pop = session[session_id].pop(0)
             total_length -= len(pop['content'])
 
 
@@ -255,13 +196,13 @@ def check_session_length(session_id, role, context):
     state=enable_processor_state(name='chat', level=10),
 ).handle()
 async def _(event: GroupMessageEvent):
-    session_id = str(event.group_id)
+    session_id = 'gchat_' + str(event.group_id)
     try:
-        del g_session[session_id]
-        del g_session_lock[session_id]
+        del session[session_id]
+        del session_lock[session_id]
     except Exception as error:
-        g_session[session_id] = []
-        g_session_lock[session_id] = False
+        session[session_id] = []
+        session_lock[session_id] = False
     interface = OmegaInterface()
     await interface.finish(
         MessageSegment.text("成功清除群接龙历史记录！"), at_sender=True
