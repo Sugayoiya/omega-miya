@@ -8,13 +8,15 @@
 @Software       : PyCharm
 """
 
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class StandardOmegaAPIReturn[T: BaseModel](BaseModel):
+class StandardOmegaAPIReturn[T: Any](BaseModel):
     """Omega API 返回值基类"""
     error: bool
-    body: T | None
+    body: T | None = Field(default=None)
     message: str = Field(default_factory=str)
 
     model_config = ConfigDict(extra='ignore', coerce_numbers_to_str=True, from_attributes=True, frozen=True)

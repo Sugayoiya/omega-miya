@@ -11,17 +11,14 @@
 import inspect
 from collections.abc import Callable, Coroutine
 from functools import wraps
-from typing import TYPE_CHECKING
+from typing import Any
 
 from nonebot.log import logger
 
 from .model import StandardOmegaAPIReturn
 
-if TYPE_CHECKING:
-    from pydantic import BaseModel
 
-
-def return_standard_api_result[**P, T1, T2, R: 'BaseModel'](
+def return_standard_api_result[**P, T1, T2, R: Any](
         func: Callable[P, Coroutine[T1, T2, R]]
 ) -> Callable[P, Coroutine[T1, T2, StandardOmegaAPIReturn[R]]]:
     """装饰一个异步 API handler 捕获其运行时的异常并使其返回 StandardOmegaAPIReturn"""

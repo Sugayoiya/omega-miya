@@ -13,10 +13,11 @@ import time
 from collections.abc import Callable, Coroutine, Mapping
 from hashlib import sha256
 from inspect import iscoroutinefunction
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from fastapi import FastAPI, Request
-from fastapi.responses import PlainTextResponse
+from fastapi import APIRouter, FastAPI, Request
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from nonebot import get_app, get_driver
 from nonebot.log import logger
 from nonebot.utils import run_sync
@@ -25,8 +26,96 @@ from src.compat import dump_json_as
 from .config import api_config
 from .consts import APP_HEADER_KEY, TIMESTAMP_HEADER_KEY, TOKEN_HEADER_KEY
 
+if TYPE_CHECKING:
+    from src.resource import BaseResource
+
+
 _REGISTERED_APP: set[str] = set()
 """缓存全局已注册 app_name"""
+
+
+class OmegaAPIRouter(APIRouter):
+    """Omega API APIRouter 类"""
+
+    @property
+    def color_log_prefix(self) -> str:
+        return f'<lc>Omega APIRouter</lc> | APIRouter <lc>{self.prefix}</lc>'
+
+    def register_get_route(self, path: str):
+        """包装 async function 并注册为 GET 路由
+
+        :param path: 请求路径
+        """
+        path = f'/{path.strip().removeprefix("/").removesuffix("/").strip()}'
+
+        def decorator[**P, T1, T2, R](func: Callable[P, Coroutine[T1, T2, R]]) -> Callable[P, Coroutine[T1, T2, R]]:
+            if not iscoroutinefunction(func):
+                raise ValueError('The decorated function must be coroutine function')
+
+            self.get(path)(func)
+            logger.opt(colors=True).info(
+                f'{self.color_log_prefix} registered: (<lg>GET</lg>) <b><u>{self.prefix}{path}</u></b>'
+            )
+            return func
+
+        return decorator
+
+    def register_post_route(self, path: str):
+        """包装 async function 并注册为 POST 路由
+
+        :param path: 请求路径
+        """
+        path = f'/{path.strip().removeprefix("/").removesuffix("/").strip()}'
+
+        def decorator[**P, T1, T2, R](func: Callable[P, Coroutine[T1, T2, R]]) -> Callable[P, Coroutine[T1, T2, R]]:
+            if not iscoroutinefunction(func):
+                raise ValueError('The decorated function must be coroutine function')
+
+            self.post(path)(func)
+            logger.opt(colors=True).info(
+                f'{self.color_log_prefix} registered: (<ly>POST</ly>) <b><u>{self.prefix}{path}</u></b>'
+            )
+            return func
+
+        return decorator
+
+    def register_put_route(self, path: str):
+        """包装 async function 并注册为 PUT 路由
+
+        :param path: 请求路径
+        """
+        path = f'/{path.strip().removeprefix("/").removesuffix("/").strip()}'
+
+        def decorator[**P, T1, T2, R](func: Callable[P, Coroutine[T1, T2, R]]) -> Callable[P, Coroutine[T1, T2, R]]:
+            if not iscoroutinefunction(func):
+                raise ValueError('The decorated function must be coroutine function')
+
+            self.put(path)(func)
+            logger.opt(colors=True).info(
+                f'{self.color_log_prefix} registered: (<lc>PUT</lc>) <b><u>{self.prefix}{path}</u></b>'
+            )
+            return func
+
+        return decorator
+
+    def register_delete_route(self, path: str):
+        """包装 async function 并注册为 DELETE 路由
+
+        :param path: 请求路径
+        """
+        path = f'/{path.strip().removeprefix("/").removesuffix("/").strip()}'
+
+        def decorator[**P, T1, T2, R](func: Callable[P, Coroutine[T1, T2, R]]) -> Callable[P, Coroutine[T1, T2, R]]:
+            if not iscoroutinefunction(func):
+                raise ValueError('The decorated function must be coroutine function')
+
+            self.delete(path)(func)
+            logger.opt(colors=True).info(
+                f'{self.color_log_prefix} registered: (<lr>DELETE</lr>) <b><u>{self.prefix}{path}</u></b>'
+            )
+            return func
+
+        return decorator
 
 
 class OmegaAPI:
@@ -104,23 +193,23 @@ class OmegaAPI:
             # 请求 App 名称校验
             request_app = request.headers.get(APP_HEADER_KEY, None)
             if request_app is None or request_app != self._app_name:
-                return PlainTextResponse('Invalid Request App', status_code=403)
+                return JSONResponse({'error': True, 'message': 'Invalid Request App'}, status_code=403)
 
             # 请求时间戳校验
             request_timestamp = request.headers.get(TIMESTAMP_HEADER_KEY, None)
             if request_timestamp is None:
-                return PlainTextResponse('Timestamp Not Provided', status_code=403)
+                return JSONResponse({'error': True, 'message': 'Timestamp Not Provided'}, status_code=403)
             # 验证时间戳是否在合理范围内(±60秒)
             if not request_timestamp.isdigit() or abs(int(time.time()) - int(request_timestamp)) > 60:
-                return PlainTextResponse('Invalid Timestamp', status_code=403)
+                return JSONResponse({'error': True, 'message': 'Invalid Timestamp'}, status_code=403)
 
             # 请求签名校验
             token = request.headers.get(TOKEN_HEADER_KEY, None)
             if token is None:
-                return PlainTextResponse('Token Not Provided', status_code=403)
+                return JSONResponse({'error': True, 'message': 'Token Not Provided'}, status_code=403)
 
             if not await self.async_verify_params_hmac(token, request_timestamp, request.query_params):
-                return PlainTextResponse('Invalid Token', status_code=403)
+                return JSONResponse({'error': True, 'message': 'Invalid Token'}, status_code=403)
 
             return await call_next(request)
 
@@ -128,6 +217,44 @@ class OmegaAPI:
         nonebot_app: FastAPI = get_app()
         nonebot_app.mount(f'/{self._app_name}', sub_app)
         return sub_app
+
+    def mount_router[T: APIRouter](self, api_router: T, prefix: str = '', **kwargs) -> T:
+        """挂载 APIRouter"""
+        prefix = f'/{prefix.strip().removeprefix("/").removesuffix("/").strip()}' if prefix else prefix
+        self._app.include_router(api_router, prefix=prefix, **kwargs)
+        logger.opt(colors=True).info(
+            f'{self.color_log_prefix} mounted APIRouter at: <b><u>{self._root_url}{prefix}{api_router.prefix}</u></b>'
+        )
+        return api_router
+
+    def mount_static_path(
+            self,
+            target_dir: 'BaseResource',
+            path: str = '',
+            *,
+            prefix: str = '',
+            html: bool = False,
+            check_dir: bool = True,
+            follow_symlink: bool = False,
+    ) -> None:
+        """挂载静态文件路径"""
+        target_dir.raise_not_dir()
+        prefix = f'/{prefix.strip().removeprefix("/").removesuffix("/").strip()}' if prefix else prefix
+        path = f'/{path.strip().removeprefix("/").removesuffix("/").strip()}' if path else path
+        mount_path = f'{prefix.strip()}{path.strip()}'
+        self._app.mount(
+            mount_path,
+            StaticFiles(
+                directory=target_dir.path,
+                html=html,
+                check_dir=check_dir,
+                follow_symlink=follow_symlink,
+            ),
+            name=target_dir.path.name,
+        )
+        logger.opt(colors=True).info(
+            f'{self.color_log_prefix} mounted <lc>{target_dir}</lc> at: <b><u>{self._root_url}{mount_path}</u></b>'
+        )
 
     def register_get_route(self, path: str):
         """包装 async function 并注册为 GET 路由
@@ -142,7 +269,7 @@ class OmegaAPI:
 
             self._app.get(path)(func)
             logger.opt(colors=True).info(
-                f'{self.color_log_prefix} running at: (<lg>GET</lg>) <b><u>{self._root_url}{path}</u></b>'
+                f'{self.color_log_prefix} registered: (<lg>GET</lg>) <b><u>{self._root_url}{path}</u></b>'
             )
             return func
 
@@ -161,7 +288,7 @@ class OmegaAPI:
 
             self._app.post(path)(func)
             logger.opt(colors=True).info(
-                f'{self.color_log_prefix} running at: (<ly>POST</ly>) <b><u>{self._root_url}{path}</u></b>'
+                f'{self.color_log_prefix} registered: (<ly>POST</ly>) <b><u>{self._root_url}{path}</u></b>'
             )
             return func
 
@@ -180,7 +307,7 @@ class OmegaAPI:
 
             self._app.put(path)(func)
             logger.opt(colors=True).info(
-                f'{self.color_log_prefix} running at: (<lc>PUT</lc>) <b><u>{self._root_url}{path}</u></b>'
+                f'{self.color_log_prefix} registered: (<lc>PUT</lc>) <b><u>{self._root_url}{path}</u></b>'
             )
             return func
 
@@ -199,7 +326,7 @@ class OmegaAPI:
 
             self._app.delete(path)(func)
             logger.opt(colors=True).info(
-                f'{self.color_log_prefix} running at: (<lr>DELETE</lr>) <b><u>{self._root_url}{path}</u></b>'
+                f'{self.color_log_prefix} registered: (<lr>DELETE</lr>) <b><u>{self._root_url}{path}</u></b>'
             )
             return func
 
@@ -208,4 +335,5 @@ class OmegaAPI:
 
 __all__ = [
     'OmegaAPI',
+    'OmegaAPIRouter',
 ]
