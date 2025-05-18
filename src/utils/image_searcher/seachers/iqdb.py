@@ -30,10 +30,6 @@ class Iqdb(BaseImageSearcherAPI):
         return 'https://iqdb.org'
 
     @classmethod
-    async def _async_get_root_url(cls, *args, **kwargs) -> str:
-        return cls._get_root_url(*args, **kwargs)
-
-    @classmethod
     def _get_default_headers(cls) -> 'HeaderTypes':
         headers = cls._get_omega_requests_default_headers()
         headers.update({
