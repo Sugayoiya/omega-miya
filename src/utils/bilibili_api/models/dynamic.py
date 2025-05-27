@@ -91,15 +91,16 @@ class EmojiType(StrEnum):
 @unique
 class AdditionalType(StrEnum):
     """相关内容卡片类型"""
-    none = 'ADDITIONAL_TYPE_NONE'
-    pgc = 'ADDITIONAL_TYPE_PGC'
+    none = 'ADDITIONAL_TYPE_NONE' # 无附加类型
+    pgc = 'ADDITIONAL_TYPE_PGC' # 番剧影视
     goods = 'ADDITIONAL_TYPE_GOODS'  # 商品信息
     vote = 'ADDITIONAL_TYPE_VOTE'  # 投票
     common = 'ADDITIONAL_TYPE_COMMON'  # 一般类型
-    match = 'ADDITIONAL_TYPE_MATCH'
-    up_rcmd = 'ADDITIONAL_TYPE_UP_RCMD'
+    match = 'ADDITIONAL_TYPE_MATCH' # 比赛
+    up_rcmd = 'ADDITIONAL_TYPE_UP_RCMD' # UP主推荐
     ugc = 'ADDITIONAL_TYPE_UGC'  # 视频跳转
-    reserve = 'ADDITIONAL_TYPE_RESERVE'
+    reserve = 'ADDITIONAL_TYPE_RESERVE' # 直播预约
+    upower_lottery = 'ADDITIONAL_TYPE_UPOWER_LOTTERY' # 动态充电互动抽奖
 
 
 @unique
@@ -377,6 +378,8 @@ class AdditionalReserveItem(BaseBilibiliModel):
     title: str
     up_mid: str
 
+class AdditionalUpowerLotteryItem(BaseBilibiliModel):
+    """动态充电互动抽奖"""
 
 
 class BaseModuleDynamicAdditional(BaseBilibiliModel):
@@ -428,6 +431,10 @@ class ModuleDynamicAdditionalReserve(BaseModuleDynamicAdditional):
     """预约信息"""
     reserve: AdditionalReserveItem
 
+class ModuleDynamicUpowerLottery(BaseModuleDynamicAdditional):
+    """动态充电互动抽奖"""
+    upower_lottery: AdditionalUpowerLotteryItem
+
 
 type ModuleDynamicAdditional = (
         ModuleDynamicAdditionalNone
@@ -439,6 +446,7 @@ type ModuleDynamicAdditional = (
         | ModuleDynamicAdditionalUpRcmd
         | ModuleDynamicAdditionalReserve
         | ModuleDynamicAdditionalUgc
+        | ModuleDynamicUpowerLottery
         | BaseModuleDynamicAdditional
 )
 
