@@ -132,10 +132,14 @@ class OmegaAPI:
     def color_log_prefix(self) -> str:
         return f'<lc>Omega API</lc> | Service <lc>{self._app_name}</lc>'
 
+    @property
+    def root_url(self) -> str:
+        return self._root_url
+
     def _get_root_url(self) -> str:
-        nonebot_confid = get_driver().config
-        host = str(nonebot_confid.host)
-        port = nonebot_confid.port
+        nonebot_config = get_driver().config
+        host = str(nonebot_config.host)
+        port = nonebot_config.port
         if host in ['0.0.0.0', '127.0.0.1']:
             host = 'localhost'
         return f'http://{host}:{port}/{self._app_name}'
@@ -223,7 +227,7 @@ class OmegaAPI:
         prefix = f'/{prefix.strip().removeprefix("/").removesuffix("/").strip()}' if prefix else prefix
         self._app.include_router(api_router, prefix=prefix, **kwargs)
         logger.opt(colors=True).info(
-            f'{self.color_log_prefix} mounted APIRouter at: <b><u>{self._root_url}{prefix}{api_router.prefix}</u></b>'
+            f'{self.color_log_prefix} mounted APIRouter at: <b><u>{self.root_url}{prefix}{api_router.prefix}</u></b>'
         )
         return api_router
 
@@ -253,7 +257,7 @@ class OmegaAPI:
             name=target_dir.path.name,
         )
         logger.opt(colors=True).info(
-            f'{self.color_log_prefix} mounted <lc>{target_dir}</lc> at: <b><u>{self._root_url}{mount_path}</u></b>'
+            f'{self.color_log_prefix} mounted <lc>{target_dir}</lc> at: <b><u>{self.root_url}{mount_path}</u></b>'
         )
 
     def register_get_route(self, path: str):
@@ -269,7 +273,7 @@ class OmegaAPI:
 
             self._app.get(path)(func)
             logger.opt(colors=True).info(
-                f'{self.color_log_prefix} registered: (<lg>GET</lg>) <b><u>{self._root_url}{path}</u></b>'
+                f'{self.color_log_prefix} registered: (<lg>GET</lg>) <b><u>{self.root_url}{path}</u></b>'
             )
             return func
 
@@ -288,7 +292,7 @@ class OmegaAPI:
 
             self._app.post(path)(func)
             logger.opt(colors=True).info(
-                f'{self.color_log_prefix} registered: (<ly>POST</ly>) <b><u>{self._root_url}{path}</u></b>'
+                f'{self.color_log_prefix} registered: (<ly>POST</ly>) <b><u>{self.root_url}{path}</u></b>'
             )
             return func
 
@@ -307,7 +311,7 @@ class OmegaAPI:
 
             self._app.put(path)(func)
             logger.opt(colors=True).info(
-                f'{self.color_log_prefix} registered: (<lc>PUT</lc>) <b><u>{self._root_url}{path}</u></b>'
+                f'{self.color_log_prefix} registered: (<lc>PUT</lc>) <b><u>{self.root_url}{path}</u></b>'
             )
             return func
 
@@ -326,7 +330,7 @@ class OmegaAPI:
 
             self._app.delete(path)(func)
             logger.opt(colors=True).info(
-                f'{self.color_log_prefix} registered: (<lr>DELETE</lr>) <b><u>{self._root_url}{path}</u></b>'
+                f'{self.color_log_prefix} registered: (<lr>DELETE</lr>) <b><u>{self.root_url}{path}</u></b>'
             )
             return func
 
