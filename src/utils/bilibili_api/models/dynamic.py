@@ -91,15 +91,16 @@ class EmojiType(StrEnum):
 @unique
 class AdditionalType(StrEnum):
     """相关内容卡片类型"""
-    none = 'ADDITIONAL_TYPE_NONE'
-    pgc = 'ADDITIONAL_TYPE_PGC'
+    none = 'ADDITIONAL_TYPE_NONE'  # 无附加类型
+    pgc = 'ADDITIONAL_TYPE_PGC'  # 番剧影视
     goods = 'ADDITIONAL_TYPE_GOODS'  # 商品信息
     vote = 'ADDITIONAL_TYPE_VOTE'  # 投票
     common = 'ADDITIONAL_TYPE_COMMON'  # 一般类型
-    match = 'ADDITIONAL_TYPE_MATCH'
-    up_rcmd = 'ADDITIONAL_TYPE_UP_RCMD'
+    match = 'ADDITIONAL_TYPE_MATCH'  # 比赛
+    up_rcmd = 'ADDITIONAL_TYPE_UP_RCMD'  # UP主推荐
     ugc = 'ADDITIONAL_TYPE_UGC'  # 视频跳转
-    reserve = 'ADDITIONAL_TYPE_RESERVE'
+    reserve = 'ADDITIONAL_TYPE_RESERVE'  # 直播预约
+    upower_lottery = 'ADDITIONAL_TYPE_UPOWER_LOTTERY'  # 动态充电互动抽奖
 
 
 @unique
@@ -296,8 +297,10 @@ class DynItemModuleAuthor(BaseBilibiliModel):
 
 
 class BaseAdditionalItemDesc(BaseBilibiliModel):
-    style: int
-    text: str
+    """相关内容卡片描述信息字段"""
+    style: int = Field(default=-1)
+    text: str = Field(default_factory=str)
+    jump_url: str = Field(default_factory=str)
 
 
 class AdditionalNoneItem(BaseBilibiliModel):
@@ -378,6 +381,18 @@ class AdditionalReserveItem(BaseBilibiliModel):
     up_mid: str
 
 
+class AdditionalUpowerLotteryItem(BaseBilibiliModel):
+    """动态充电互动抽奖"""
+    desc: BaseAdditionalItemDesc
+    hint: BaseAdditionalItemDesc
+    jump_url: str
+    rid: str
+    state: int
+    title: str
+    up_mid: str
+    upower_action_state: int
+    upower_level: int
+
 
 class BaseModuleDynamicAdditional(BaseBilibiliModel):
     """相关内容卡片信息"""
@@ -429,6 +444,11 @@ class ModuleDynamicAdditionalReserve(BaseModuleDynamicAdditional):
     reserve: AdditionalReserveItem
 
 
+class ModuleDynamicUpowerLottery(BaseModuleDynamicAdditional):
+    """动态充电互动抽奖"""
+    upower_lottery: AdditionalUpowerLotteryItem
+
+
 type ModuleDynamicAdditional = (
         ModuleDynamicAdditionalNone
         | ModuleDynamicAdditionalPgc
@@ -439,6 +459,7 @@ type ModuleDynamicAdditional = (
         | ModuleDynamicAdditionalUpRcmd
         | ModuleDynamicAdditionalReserve
         | ModuleDynamicAdditionalUgc
+        | ModuleDynamicUpowerLottery
         | BaseModuleDynamicAdditional
 )
 
@@ -663,7 +684,6 @@ class ModuleDynamicMajorNone(BaseModuleDynamicMajor):
 
     def get_major_text(self) -> str:
         return self.none.tips
-
 
 
 class ModuleDynamicMajorOpus(BaseModuleDynamicMajor):
