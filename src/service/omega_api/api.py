@@ -121,9 +121,25 @@ class OmegaAPIRouter(APIRouter):
 class OmegaAPI:
     """Omega API 应用创建与路由注册"""
 
-    def __init__(self, app_name: str, *, enable_token_verify: bool = False) -> None:
-        self._enable_token_verify = enable_token_verify
+    def __init__(
+            self,
+            app_name: str,
+            *,
+            enable_token_verify: bool = False,
+            access_domain: str | None = None,
+            use_https: bool = False,
+    ) -> None:
+        """初始化 Omega API 应用
+
+        :param app_name: 应用名称, 应当为全局唯一
+        :param enable_token_verify: 是否启用请求 headers token 校验
+        :param access_domain: 外部访问域名, 适用于配置了 nginx 反向代理的访问
+        :param use_https: 返回访问 URL 是是否使用 https
+        """
         self._app_name = app_name.strip().removeprefix('/').removesuffix('/').strip()
+        self._enable_token_verify = enable_token_verify
+        self._access_domain = access_domain
+        self._use_https = use_https
         self._api_key = api_config.omega_api_key.get_secret_value()
         self._app = self._init_sub_app()
         self._root_url = self._get_root_url()
@@ -138,11 +154,11 @@ class OmegaAPI:
 
     def _get_root_url(self) -> str:
         nonebot_config = get_driver().config
-        host = str(nonebot_config.host)
+        host = self._access_domain if self._access_domain is not None else str(nonebot_config.host)
         port = nonebot_config.port
         if host in ['0.0.0.0', '127.0.0.1']:
             host = 'localhost'
-        return f'http://{host}:{port}/{self._app_name}'
+        return f'{"https" if self._use_https else "http"}://{host}:{port}/{self._app_name}'
 
     @staticmethod
     def sign_params_hmac(key: str, app_name: str, params: Mapping[str, str]) -> str:
