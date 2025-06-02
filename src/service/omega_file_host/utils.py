@@ -15,23 +15,23 @@ from nonebot import get_driver, logger
 
 from src.service.apscheduler import scheduler
 from src.service.omega_global_cache import OmegaGlobalCache
+from .config import file_host_config
 
 if TYPE_CHECKING:
     from src.resource import BaseResource
 
-_FILE_HOST_CACHE: OmegaGlobalCache = OmegaGlobalCache('omega_file_host')
+_FILE_HOST_CACHE = OmegaGlobalCache('omega_file_host', ttl=file_host_config.omega_file_host_cache_ttl)
 
 
 @scheduler.scheduled_job(
     'cron',
-    hour='*/2',
-    minute='11',
+    minute='*/5',
     second='11',
-    id='omega_file_host_sync_cache',
+    id='omega_file_host_sync_file_host_cache',
     coalesce=True,
 )
 @get_driver().on_startup
-async def _sync_filehost_cache() -> None:
+async def _sync_file_host_cache() -> None:
     """同步文件缓存"""
     try:
         await _FILE_HOST_CACHE.sync_internal()

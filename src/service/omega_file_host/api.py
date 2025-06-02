@@ -16,7 +16,11 @@ from src.service.omega_api import OmegaAPI
 from .config import file_host_config
 from .utils import query_file_path, query_file_uuid
 
-_FILE_HOST_API = OmegaAPI(app_name='omega_file_host')
+_FILE_HOST_API = OmegaAPI(
+    app_name='omega_file_host',
+    access_domain=file_host_config.omega_file_host_access_domain,
+    use_https=file_host_config.omega_file_host_use_https,
+)
 """文件服务 API"""
 
 if file_host_config.omega_file_host_enable_hosting_service:
