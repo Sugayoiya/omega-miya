@@ -24,6 +24,7 @@ class SocialMediaContent(BaseDataQueryResultModel):
     m_id: str
     m_type: str
     m_uid: str
+    title: str
     content: str
     ref_content: str
     created_at: datetime | None = None
