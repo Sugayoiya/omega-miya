@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
 
-class InternalSubscriptionSource(abc.ABC):
+class BaseInternalSubscriptionSource(abc.ABC):
     """封装后用于插件调用的数据库实体操作对象"""
 
     __slots__ = ('db_session', 'sub_id',)
@@ -70,7 +70,7 @@ class InternalSubscriptionSource(abc.ABC):
         return await dal.query_all_entity_subscribed_source(sub_source_index_id=source.id, entity_type=entity_type)
 
 
-class InternalBilibiliLiveSubscriptionSource(InternalSubscriptionSource):
+class InternalBilibiliLiveSubscriptionSource(BaseInternalSubscriptionSource):
     """Bilibili 直播订阅源"""
 
     def __init__(self, session: 'AsyncSession', live_room_id: str | int):
@@ -82,7 +82,7 @@ class InternalBilibiliLiveSubscriptionSource(InternalSubscriptionSource):
         return SubscriptionSourceType.bili_live.value
 
 
-class InternalBilibiliDynamicSubscriptionSource(InternalSubscriptionSource):
+class InternalBilibiliDynamicSubscriptionSource(BaseInternalSubscriptionSource):
     """Bilibili 动态订阅源"""
 
     def __init__(self, session: 'AsyncSession', uid: str | int):
@@ -94,7 +94,7 @@ class InternalBilibiliDynamicSubscriptionSource(InternalSubscriptionSource):
         return SubscriptionSourceType.bili_dynamic.value
 
 
-class InternalPixivUserSubscriptionSource(InternalSubscriptionSource):
+class InternalPixivUserSubscriptionSource(BaseInternalSubscriptionSource):
     """Pixiv 用户订阅源"""
 
     def __init__(self, session: 'AsyncSession', uid: str | int):
@@ -106,7 +106,7 @@ class InternalPixivUserSubscriptionSource(InternalSubscriptionSource):
         return SubscriptionSourceType.pixiv_user.value
 
 
-class InternalPixivisionSubscriptionSource(InternalSubscriptionSource):
+class InternalPixivisionSubscriptionSource(BaseInternalSubscriptionSource):
     """Pixivision 特辑订阅源"""
 
     def __init__(self, session: 'AsyncSession'):
@@ -121,7 +121,7 @@ class InternalPixivisionSubscriptionSource(InternalSubscriptionSource):
         return await super().add_upgrade(sub_user_name='pixivision', sub_info='Pixivision特辑订阅')
 
 
-class InternalWeiboUserSubscriptionSource(InternalSubscriptionSource):
+class InternalWeiboUserSubscriptionSource(BaseInternalSubscriptionSource):
     """微博用户订阅源"""
 
     def __init__(self, session: 'AsyncSession', uid: str | int):
@@ -134,7 +134,7 @@ class InternalWeiboUserSubscriptionSource(InternalSubscriptionSource):
 
 
 __all__ = [
-    'InternalSubscriptionSource',
+    'BaseInternalSubscriptionSource',
     'InternalBilibiliLiveSubscriptionSource',
     'InternalBilibiliDynamicSubscriptionSource',
     'InternalPixivUserSubscriptionSource',

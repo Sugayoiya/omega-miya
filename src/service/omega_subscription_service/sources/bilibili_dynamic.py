@@ -1,0 +1,105 @@
+"""
+@Author         : Ailitonia
+@Date           : 2025/6/3 22:16
+@FileName       : bilibili_dynamic
+@Project        : omega-miya
+@Description    : 哔哩哔哩动态订阅源
+@GitHub         : https://github.com/Ailitonia
+@Software       : PyCharm
+"""
+
+from typing import TYPE_CHECKING, Any
+
+from src.database.internal.social_media_content import SocialMediaContent
+from src.database.internal.subscription_source import SubscriptionSource, SubscriptionSourceType
+from src.exception import WebSourceException
+from src.service import OmegaMessage, OmegaMessageSegment
+from src.service.omega_base.internal.subscription_source import BaseInternalSubscriptionSource
+from src.utils import semaphore_gather
+from src.utils.bilibili_api import BilibiliDynamic, BilibiliUser
+from ..manager import BaseSubscriptionManager
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+    from src.utils.bilibili_api.models.dynamic import DynItem
+
+    type SMC_T = DynItem
+
+
+class BilibiliDynamicSubscriptionSource(BaseInternalSubscriptionSource):
+    """Bilibili 动态订阅源"""
+
+    def __init__(self, session: 'AsyncSession', uid: str | int):
+        self.db_session = session
+        self.sub_id = str(uid)
+
+    @classmethod
+    def get_sub_type(cls) -> str:
+        return SubscriptionSourceType.bili_dynamic.value
+
+
+class BilibiliDynamicSubscriptionManager(BaseSubscriptionManager['SMC_T']):
+    """Bilibili 动态订阅服务管理"""
+
+    def __init__(self, uid: str | int) -> None:
+        self.sub_id = str(uid)
+
+    @classmethod
+    def get_subscription_source(cls) -> type['BaseInternalSubscriptionSource']:
+        return BilibiliDynamicSubscriptionSource
+
+    def _gen_sub_source_init_params(self) -> dict[str, Any]:
+        return {'uid': self.sub_id}
+
+    @staticmethod
+    def get_smc_item_mid(smc_item: 'SMC_T') -> str:
+        return smc_item.id_str
+
+    @classmethod
+    def parse_smc_item(cls, smc_item: 'SMC_T') -> 'SocialMediaContent':
+        return SocialMediaContent.model_validate({
+            'source': cls.get_sub_type(),
+            'm_id': smc_item.id_str,
+            'm_type': str(smc_item.type),
+            'm_uid': str(smc_item.modules.module_author.mid),
+            'title': f'{smc_item.modules.module_author.name}的动态',
+            'content': smc_item.dyn_text,
+        })
+
+    async def _query_sub_source_smc_items(self) -> 'list[SMC_T]':
+        dynamics = await BilibiliDynamic.query_user_space_dynamics(host_mid=self.sub_id)
+        return dynamics.data.items
+
+    async def _query_sub_source_data(self) -> 'SubscriptionSource':
+        user_data = await BilibiliUser.query_user_info(mid=self.sub_id)
+        if user_data.error:
+            raise WebSourceException(404, f'query user({self.sub_id}) info failed, {user_data.message}')
+
+        return SubscriptionSource.model_validate({
+            'id': -1,
+            'sub_type': self.get_sub_type(),
+            'sub_id': self.sub_id,
+            'sub_user_name': user_data.uname,
+            'sub_info': 'Bilibili用户动态订阅',
+        })
+
+    @staticmethod
+    async def _format_smc_item_message(smc_item: 'SMC_T') -> str | OmegaMessage:
+        send_message = f'【bilibili】{smc_item.dyn_text}\n'
+
+        # 下载动态中包含的图片
+        if smc_item.dyn_image_urls:
+            img_download_tasks = [BilibiliDynamic.download_resource(url=url) for url in smc_item.dyn_image_urls]
+            img_download_res = await semaphore_gather(tasks=img_download_tasks, semaphore_num=9, filter_exception=True)
+            for img in img_download_res:
+                send_message += OmegaMessageSegment.image(url=img.path)
+            send_message += '\n'
+
+        send_message += f'\n动态链接: https://t.bilibili.com/{smc_item.id_str}'
+        return send_message
+
+
+__all__ = [
+    'BilibiliDynamicSubscriptionSource',
+    'BilibiliDynamicSubscriptionManager',
+]
