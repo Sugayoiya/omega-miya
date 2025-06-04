@@ -3,7 +3,7 @@
 @Date           : 2025/6/3 22:13
 @FileName       : sources
 @Project        : omega-miya
-@Description    : 订阅源适配
+@Description    : 订阅源适配实现
 @GitHub         : https://github.com/Ailitonia
 @Software       : PyCharm
 """

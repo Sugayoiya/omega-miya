@@ -9,19 +9,20 @@
 """
 
 import abc
-from collections.abc import AsyncGenerator, Iterable
-from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, Any
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self
 
 from nonebot.exception import ActionFailed
 from nonebot.log import logger
+from sqlalchemy.exc import NoResultFound
 
-from src.database import SocialMediaContentDAL, begin_db_session
+from src.database import EntityDAL, SocialMediaContentDAL, SubscriptionSourceDAL, begin_db_session
 from src.service import (
     OmegaEntity,
     OmegaEntityInterface as OmEI,
     OmegaMatcherInterface as OmMI,
     OmegaMessage,
+    OmegaMessageSegment,
 )
 from src.utils import semaphore_gather
 
@@ -29,11 +30,13 @@ if TYPE_CHECKING:
     from src.database.internal.entity import Entity
     from src.database.internal.social_media_content import SocialMediaContent
     from src.database.internal.subscription_source import SubscriptionSource
-    from src.service.omega_base.internal.subscription_source import BaseInternalSubscriptionSource
 
 
 class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
     """订阅服务管理基类"""
+
+    SETTING_NODE_NOTICE_AT_ALL: ClassVar[Literal['notice_at_all']] = 'notice_at_all'
+    """添加插件配置时的通知@全体的节点名称"""
 
     __slots__ = ('sub_id',)
     sub_id: str
@@ -42,52 +45,94 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
         return f'{self.__class__.__name__}(sub_id={self.sub_id})'
 
     def __str__(self) -> str:
-        return f'{self.__class__.__name__} | {self.sub_type} | {self.sub_id}'
+        return f'SubscriptionManager | {self.sub_type.upper()} | {self.sub_id}'
 
     @classmethod
     @abc.abstractmethod
-    def get_subscription_source(cls) -> type['BaseInternalSubscriptionSource']:
-        """获取订阅源操作对象"""
+    def init_from_sub_id(cls, sub_id: str | int) -> Self:
+        """通用实例化方法, 由 sub_id 实例化"""
         raise NotImplementedError
 
     @classmethod
+    @abc.abstractmethod
     def get_sub_type(cls) -> str:
         """获取订阅源类型"""
-        return cls.get_subscription_source().get_sub_type()
-
-    @property
-    def sub_source(self) -> type['BaseInternalSubscriptionSource']:
-        """获取订阅源操作对象"""
-        return self.get_subscription_source()
+        raise NotImplementedError
 
     @property
     def sub_type(self) -> str:
         """获取订阅源类型"""
         return self.get_sub_type()
 
-    @abc.abstractmethod
-    def _gen_sub_source_init_params(self) -> dict[str, Any]:
-        """生成订阅源初始化参数"""
-        raise NotImplementedError
+    """数据库读写管理部分"""
 
-    @asynccontextmanager
-    async def _begin_sub_source_session(self) -> AsyncGenerator['BaseInternalSubscriptionSource', None]:
-        """开始订阅源操作对象的会话"""
+    @classmethod
+    async def _query_type_all_subscription_sources(cls) -> list['SubscriptionSource']:
+        """从数据库查询 sub_type 对应的全部订阅源"""
         async with begin_db_session() as session:
-            source = self.sub_source(session=session, **self._gen_sub_source_init_params())
-            yield source
+            result = await SubscriptionSourceDAL(session=session).query_type_all(sub_type=cls.get_sub_type())
+        return result
+
+    async def _query_subscription_source(self) -> 'SubscriptionSource':
+        """从数据库查询订阅源"""
+        async with begin_db_session() as session:
+            result = await SubscriptionSourceDAL(session=session).query_unique(
+                sub_type=self.get_sub_type(),
+                sub_id=self.sub_id,
+            )
+        return result
+
+    async def _add_upgrade_subscription_source(self, sub_user_name: str, sub_info: str | None = None) -> None:
+        """在数据库新增订阅源, 若已存在则更新"""
+        async with begin_db_session() as session:
+            source_dal = SubscriptionSourceDAL(session=session)
+            try:
+                source = await source_dal.query_unique(sub_type=self.get_sub_type(), sub_id=self.sub_id)
+                await source_dal.update(id_=source.id, sub_user_name=sub_user_name, sub_info=sub_info)
+            except NoResultFound:
+                await source_dal.add(
+                    sub_type=self.get_sub_type(),
+                    sub_id=self.sub_id,
+                    sub_user_name=sub_user_name,
+                    sub_info=sub_info,
+                )
+
+    async def _delete_subscription_source(self) -> None:
+        """在数据库删除订阅源"""
+        async with begin_db_session() as session:
+            source_dal = SubscriptionSourceDAL(session=session)
+            source = await source_dal.query_unique(
+                sub_type=self.get_sub_type(),
+                sub_id=self.sub_id,
+            )
+            await source_dal.delete(id_=source.id)
+
+    async def _query_all_entity_subscribed(self, entity_type: str | None = None) -> list['Entity']:
+        """从数据库查询订阅了该订阅源的所有 Entity 对象"""
+        async with begin_db_session() as session:
+            source_dal = SubscriptionSourceDAL(session=session)
+            source = await source_dal.query_unique(
+                sub_type=self.get_sub_type(),
+                sub_id=self.sub_id,
+            )
+            entity_dal = EntityDAL(session=session)
+            entity_list = await entity_dal.query_all_entity_subscribed_source(
+                sub_source_index_id=source.id,
+                entity_type=entity_type,
+            )
+        return entity_list
 
     """订阅源内容管理部分"""
 
     @staticmethod
     @abc.abstractmethod
-    def get_smc_item_mid(smc_item: 'SMC_T') -> str:
+    def _get_smc_item_mid(smc_item: 'SMC_T') -> str:
         """获取订阅源内容对应的 SocialMediaContent mid"""
         raise NotImplementedError
 
     @classmethod
     @abc.abstractmethod
-    def parse_smc_item(cls, smc_item: 'SMC_T') -> 'SocialMediaContent':
+    def _parse_smc_item(cls, smc_item: 'SMC_T') -> 'SocialMediaContent':
         """将订阅源内容转换为 SocialMediaContent 数据"""
         raise NotImplementedError
 
@@ -95,12 +140,12 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
     async def _check_new_smc_item(cls, smc_items: 'Iterable[SMC_T]') -> 'list[SMC_T]':
         """根据 SocialMediaContent mid 检查新的订阅源内容(数据库中没有的)"""
         async with begin_db_session() as session:
-            all_mids = [cls.get_smc_item_mid(x) for x in smc_items]
+            all_mids = [cls._get_smc_item_mid(x) for x in smc_items]
             new_mids = await SocialMediaContentDAL(session=session).query_source_not_exists_mids(
                 source=cls.get_sub_type(),
                 mids=all_mids,
             )
-        return [x for x in smc_items if cls.get_smc_item_mid(x) in new_mids]
+        return [x for x in smc_items if cls._get_smc_item_mid(x) in new_mids]
 
     @abc.abstractmethod
     async def _query_sub_source_smc_items(self) -> 'list[SMC_T]':
@@ -115,7 +160,7 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
     @classmethod
     async def _add_upgrade_smc_item(cls, smc_item: 'SMC_T') -> None:
         """在数据库中添加订阅源对应 SocialMediaContent 内容"""
-        parsed_smc_item = cls.parse_smc_item(smc_item)
+        parsed_smc_item = cls._parse_smc_item(smc_item)
         async with begin_db_session() as session:
             await SocialMediaContentDAL(session=session).upsert(
                 source=cls.get_sub_type(),
@@ -136,41 +181,37 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
     """Entity 对象订阅管理部分"""
 
     @abc.abstractmethod
-    async def _query_sub_source_data(self) -> 'SubscriptionSource':
+    async def query_sub_source_data(self) -> 'SubscriptionSource':
         """从订阅源站点或 API 获取订阅源信息(注意: 本方法返回的订阅源信息索引 ID 为缺省值 -1)"""
         raise NotImplementedError
 
-    async def _query_sub_source(self) -> 'SubscriptionSource':
-        """从数据库查询订阅源"""
-        async with self._begin_sub_source_session() as source:
-            source_res = await source.query_subscription_source()
-        return source_res
-
     async def _add_upgrade_sub_source(self) -> 'SubscriptionSource':
         """在数据库中新更新订阅源"""
-        sub_source_data = await self._query_sub_source_data()
+        sub_source_data = await self.query_sub_source_data()
 
         # 提前添加订阅源内容到数据库避免后续检查时将添加时已存在的的内容一并带出
         await self._add_sub_source_new_smc_content()
 
         # 将订阅源信息写入数据库
-        async with self._begin_sub_source_session() as source:
-            await source.add_upgrade(sub_user_name=sub_source_data.sub_user_name, sub_info=sub_source_data.sub_info)
-            # `self._query_sub_source_data()` 提供的订阅源信息索引 ID 为缺省值, 这里需要反查获取真实的索引 ID
-            source_res = await source.query_subscription_source()
-        return source_res
+        await self._add_upgrade_subscription_source(
+            sub_user_name=sub_source_data.sub_user_name,
+            sub_info=sub_source_data.sub_info,
+        )
+
+        # `self._query_sub_source_data()` 提供的订阅源信息索引 ID 为缺省值, 这里需要反查获取真实的索引 ID
+        return await self._query_subscription_source()
 
     async def add_entity_sub(self, interface: 'OmMI') -> None:
         """为目标 Entity 添加订阅源的对应订阅"""
         source_res = await self._add_upgrade_sub_source()
         await interface.entity.add_subscription(
             subscription_source=source_res,
-            sub_info=f'订阅类型: {source_res!r}, 订阅ID: {source_res.sub_id})',
+            sub_info=f'订阅类型: {source_res.sub_type}, 订阅ID: {source_res.sub_id})',
         )
 
     async def delete_entity_sub(self, interface: 'OmMI') -> None:
         """为目标 Entity 删除订阅源的对应订阅"""
-        source_res = await self._add_upgrade_sub_source()
+        source_res = await self._query_subscription_source()
         await interface.entity.delete_subscription(subscription_source=source_res)
 
     @classmethod
@@ -187,15 +228,12 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
 
         :return: sub_id 列表
         """
-        async with begin_db_session() as session:
-            source_res = await cls.get_subscription_source().query_type_all(session=session)
+        source_res = await cls._query_type_all_subscription_sources()
         return [x.sub_id for x in source_res]
 
     async def query_subscribed_entity_by_sub_source(self) -> list['Entity']:
         """根据订阅源查询已经订阅了该订阅源的 Entity 对象"""
-        async with self._begin_sub_source_session() as source:
-            subscribed_entity = await source.query_all_entity_subscribed()
-        return subscribed_entity
+        return await self._query_all_entity_subscribed()
 
     """消息处理和发送管理部分"""
 
@@ -205,25 +243,68 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
         """处理订阅源内容为消息"""
         raise NotImplementedError
 
+    async def _check_entity_has_notice_at_all_node(self, entity: 'OmegaEntity') -> bool:
+        """检查目标 Entity 是否具有通知@所有人的权限"""
+        try:
+            return await entity.check_auth_setting(
+                module=self.__class__.__name__,
+                plugin=self.get_sub_type(),
+                node=self.SETTING_NODE_NOTICE_AT_ALL,
+            )
+        except Exception as e:
+            logger.warning(f'{self} | Checking {entity} notice at all node failed, {e!r}')
+            return False
+
     async def _sender_entity_message(self, entity: 'Entity', message: str | OmegaMessage) -> None:
         """向 Entity 发送消息"""
         try:
             async with begin_db_session() as session:
+                # 根据获取到的 Entity 信息实例化对象接口
                 internal_entity = await OmegaEntity.init_from_entity_index_id(session=session, index_id=entity.id)
-                interface = OmEI(entity=internal_entity)
-                await interface.send_entity_message(message=message)
+
+                # 预处理@全息消息
+                if await self._check_entity_has_notice_at_all_node(entity=internal_entity):
+                    message = OmegaMessageSegment.at_all() + message
+
+                # 向对应 Entity 发送消息
+                await OmEI(entity=internal_entity).send_entity_message(message=message)
         except ActionFailed as e:
             logger.warning(f'{self} | Sending message to {entity} failed with ActionFailed, {e!r}')
         except Exception as e:
             logger.error(f'{self} | Sending message to {entity} failed, {e!r}')
 
-    async def send_subscribed_entity_smc_message(self, smc_item: 'SMC_T') -> None:
+    async def _send_subscribed_entity_smc_message(self, smc_item: 'SMC_T') -> None:
         """向所有订阅了该订阅源的 Entity 订阅者发送新订阅内容信息"""
         send_message = await self._format_smc_item_message(smc_item=smc_item)
         subscribed_entity = await self.query_subscribed_entity_by_sub_source()
         send_tasks = [
             self._sender_entity_message(entity=entity, message=send_message)
             for entity in subscribed_entity
+        ]
+        await semaphore_gather(tasks=send_tasks, semaphore_num=2)
+
+    async def check_subscription_source_update_and_send_entity_message(self) -> None:
+        """检查订阅源更新并向已订阅的对象发送新订阅内容信息"""
+        logger.debug(f'{self} | Start checking updated content')
+
+        new_smc_items = await self._query_sub_source_new_smc_items()
+        if new_smc_items:
+            logger.info(
+                f'{self} | Confirmed new content(s): '
+                f'{", ".join(self._get_smc_item_mid(smc_item=smc_item) for smc_item in new_smc_items)}'
+            )
+        else:
+            logger.debug(f'{self} | No new content found')
+            return
+
+        # 更新内容先插入数据库避免发送失败后重复发送
+        add_artwork_tasks = [self._add_upgrade_smc_item(smc_item=smc_item) for smc_item in new_smc_items]
+        await semaphore_gather(tasks=add_artwork_tasks, semaphore_num=8, return_exceptions=False)
+
+        # 向订阅者发送订阅更新信息
+        send_tasks = [
+            self._send_subscribed_entity_smc_message(smc_item=smc_item)
+            for smc_item in new_smc_items
         ]
         await semaphore_gather(tasks=send_tasks, semaphore_num=2)
 

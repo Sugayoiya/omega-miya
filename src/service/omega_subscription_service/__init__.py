@@ -8,12 +8,14 @@
 @Software       : PyCharm
 """
 
+from .handlers import SubscriptionHandlerManager
 from .sources import (
     BilibiliDynamicSubscriptionManager,
     WeiboUserSubscriptionManager,
 )
 
 __all__ = [
+    'SubscriptionHandlerManager',
     'BilibiliDynamicSubscriptionManager',
     'WeiboUserSubscriptionManager',
 ]

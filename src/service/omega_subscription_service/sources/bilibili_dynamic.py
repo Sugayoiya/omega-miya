@@ -8,34 +8,19 @@
 @Software       : PyCharm
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Self
 
 from src.database.internal.social_media_content import SocialMediaContent
 from src.database.internal.subscription_source import SubscriptionSource, SubscriptionSourceType
 from src.exception import WebSourceException
 from src.service import OmegaMessage, OmegaMessageSegment
-from src.service.omega_base.internal.subscription_source import BaseInternalSubscriptionSource
 from src.utils import semaphore_gather
 from src.utils.bilibili_api import BilibiliDynamic, BilibiliUser
 from ..manager import BaseSubscriptionManager
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession
     from src.utils.bilibili_api.models.dynamic import DynItem
-
     type SMC_T = DynItem
-
-
-class BilibiliDynamicSubscriptionSource(BaseInternalSubscriptionSource):
-    """Bilibili 动态订阅源"""
-
-    def __init__(self, session: 'AsyncSession', uid: str | int):
-        self.db_session = session
-        self.sub_id = str(uid)
-
-    @classmethod
-    def get_sub_type(cls) -> str:
-        return SubscriptionSourceType.bili_dynamic.value
 
 
 class BilibiliDynamicSubscriptionManager(BaseSubscriptionManager['SMC_T']):
@@ -45,18 +30,19 @@ class BilibiliDynamicSubscriptionManager(BaseSubscriptionManager['SMC_T']):
         self.sub_id = str(uid)
 
     @classmethod
-    def get_subscription_source(cls) -> type['BaseInternalSubscriptionSource']:
-        return BilibiliDynamicSubscriptionSource
+    def init_from_sub_id(cls, sub_id: str | int) -> Self:
+        return cls(uid=sub_id)
 
-    def _gen_sub_source_init_params(self) -> dict[str, Any]:
-        return {'uid': self.sub_id}
+    @classmethod
+    def get_sub_type(cls) -> str:
+        return SubscriptionSourceType.bili_dynamic.value
 
     @staticmethod
-    def get_smc_item_mid(smc_item: 'SMC_T') -> str:
+    def _get_smc_item_mid(smc_item: 'SMC_T') -> str:
         return smc_item.id_str
 
     @classmethod
-    def parse_smc_item(cls, smc_item: 'SMC_T') -> 'SocialMediaContent':
+    def _parse_smc_item(cls, smc_item: 'SMC_T') -> 'SocialMediaContent':
         return SocialMediaContent.model_validate({
             'source': cls.get_sub_type(),
             'm_id': smc_item.id_str,
@@ -70,7 +56,7 @@ class BilibiliDynamicSubscriptionManager(BaseSubscriptionManager['SMC_T']):
         dynamics = await BilibiliDynamic.query_user_space_dynamics(host_mid=self.sub_id)
         return dynamics.data.items
 
-    async def _query_sub_source_data(self) -> 'SubscriptionSource':
+    async def query_sub_source_data(self) -> 'SubscriptionSource':
         user_data = await BilibiliUser.query_user_info(mid=self.sub_id)
         if user_data.error:
             raise WebSourceException(404, f'query user({self.sub_id}) info failed, {user_data.message}')
@@ -100,6 +86,5 @@ class BilibiliDynamicSubscriptionManager(BaseSubscriptionManager['SMC_T']):
 
 
 __all__ = [
-    'BilibiliDynamicSubscriptionSource',
     'BilibiliDynamicSubscriptionManager',
 ]

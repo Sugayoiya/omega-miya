@@ -8,35 +8,20 @@
 @Software       : PyCharm
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Self
 
 from nonebot.log import logger
 
 from src.database.internal.social_media_content import SocialMediaContent
 from src.database.internal.subscription_source import SubscriptionSource, SubscriptionSourceType
 from src.service import OmegaMessage, OmegaMessageSegment
-from src.service.omega_base.internal.subscription_source import BaseInternalSubscriptionSource
 from src.utils import semaphore_gather
 from src.utils.weibo_api import Weibo
 from ..manager import BaseSubscriptionManager
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession
     from src.utils.weibo_api.model import WeiboCard
-
     type SMC_T = WeiboCard
-
-
-class WeiboUserSubscriptionSource(BaseInternalSubscriptionSource):
-    """微博用户订阅源"""
-
-    def __init__(self, session: 'AsyncSession', uid: str | int):
-        self.db_session = session
-        self.sub_id = str(uid)
-
-    @classmethod
-    def get_sub_type(cls) -> str:
-        return SubscriptionSourceType.weibo_user.value
 
 
 class WeiboUserSubscriptionManager(BaseSubscriptionManager['SMC_T']):
@@ -46,18 +31,19 @@ class WeiboUserSubscriptionManager(BaseSubscriptionManager['SMC_T']):
         self.sub_id = str(uid)
 
     @classmethod
-    def get_subscription_source(cls) -> type['BaseInternalSubscriptionSource']:
-        return WeiboUserSubscriptionSource
+    def init_from_sub_id(cls, sub_id: str | int) -> Self:
+        return cls(uid=sub_id)
 
-    def _gen_sub_source_init_params(self) -> dict[str, Any]:
-        return {'uid': self.sub_id}
+    @classmethod
+    def get_sub_type(cls) -> str:
+        return SubscriptionSourceType.weibo_user.value
 
     @staticmethod
-    def get_smc_item_mid(smc_item: 'SMC_T') -> str:
+    def _get_smc_item_mid(smc_item: 'SMC_T') -> str:
         return str(smc_item.mblog.id)
 
     @classmethod
-    def parse_smc_item(cls, smc_item: 'SMC_T') -> 'SocialMediaContent':
+    def _parse_smc_item(cls, smc_item: 'SMC_T') -> 'SocialMediaContent':
         retweeted_content = (
             smc_item.mblog.retweeted_status.text
             if smc_item.mblog.is_retweeted and smc_item.mblog.retweeted_status is not None
@@ -76,7 +62,7 @@ class WeiboUserSubscriptionManager(BaseSubscriptionManager['SMC_T']):
     async def _query_sub_source_smc_items(self) -> 'list[SMC_T]':
         return await Weibo.query_user_weibo_cards(uid=self.sub_id)
 
-    async def _query_sub_source_data(self) -> 'SubscriptionSource':
+    async def query_sub_source_data(self) -> 'SubscriptionSource':
         user_data = await Weibo.query_user_data(uid=self.sub_id)
         return SubscriptionSource.model_validate({
             'id': -1,
@@ -136,6 +122,5 @@ class WeiboUserSubscriptionManager(BaseSubscriptionManager['SMC_T']):
 
 
 __all__ = [
-    'WeiboUserSubscriptionSource',
     'WeiboUserSubscriptionManager',
 ]
