@@ -14,8 +14,8 @@ from nonebot.log import logger
 
 from src.exception import WebSourceException
 from src.service import reschedule_job, scheduler
-from src.utils import run_async_with_time_limited, semaphore_gather
-from .helpers import query_all_subscribed_weibo_user_sub_source, weibo_user_monitor_main
+from src.service.omega_subscription_service import WeiboUserSubscriptionManager
+from src.utils import run_async_delay, run_async_with_time_limited, semaphore_gather
 
 _MONITOR_JOB_ID: Literal['weibo_update_monitor'] = 'weibo_update_monitor'
 """微博更新检查的定时任务 ID"""
@@ -25,13 +25,19 @@ _CHECKING_DELAY_UNDER_RATE_LIMITING: int = 20
 """被风控时的延迟间隔"""
 
 
+@run_async_delay(delay_time=7, random_sigma=2)
+async def weibo_user_monitor_main(uid: str) -> None:
+    """微博用户订阅更新监控"""
+    await WeiboUserSubscriptionManager(uid=uid).check_subscription_source_update_and_send_entity_message()
+
+
 @run_async_with_time_limited(delay_time=240)
 async def weibo_update_monitor() -> None:
     """微博用户订阅更新监控"""
     logger.debug('WeiboMonitor | Started checking weibo update')
 
     # 获取所有已添加的微博用户订阅源
-    subscribed_uid = await query_all_subscribed_weibo_user_sub_source()
+    subscribed_uid = await WeiboUserSubscriptionManager.query_all_subscribed_sub_source_ids()
     if not subscribed_uid:
         logger.debug('WeiboMonitor | None of weibo user subscription, ignored')
         return

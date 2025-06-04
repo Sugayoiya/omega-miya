@@ -10,6 +10,9 @@
 
 from nonebot.plugin import PluginMetadata
 
+from src.service.omega_subscription_service import SubscriptionHandlerManager, WeiboUserSubscriptionManager
+from . import monitor as monitor
+
 __plugin_meta__ = PluginMetadata(
     name='微博订阅',
     description='【微博订阅插件】\n'
@@ -21,8 +24,12 @@ __plugin_meta__ = PluginMetadata(
     extra={'author': 'Ailitonia'},
 )
 
+_weibo_handler_manager = SubscriptionHandlerManager(
+    subscription_manager=WeiboUserSubscriptionManager,
+    command_prefix='微博',
+)
+_weibo = _weibo_handler_manager.register_handlers()
+"""注册微博订阅流程 Handlers"""
 
-from . import command as command
-from . import monitor as monitor
 
 __all__ = []
