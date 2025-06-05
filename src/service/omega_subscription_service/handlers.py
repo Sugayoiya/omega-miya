@@ -31,10 +31,12 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
             subscription_manager: type[SM_T],
             command_prefix: str,
             *,
+            aliases_command_prefix: set[str] | None = None,
             need_digit_sub_id: bool = False,
     ) -> None:
         self._subscription_manager = subscription_manager
         self._command_prefix = command_prefix
+        self._aliases_command_prefix: set[str] = set() if aliases_command_prefix is None else aliases_command_prefix
 
         # 相关插件配置参数
         self._need_digit_sub_id = need_digit_sub_id
@@ -214,7 +216,12 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
 
         sub_command_group.command(
             'add-subscription',
-            aliases={f'{self._command_prefix}订阅', f'订阅{self._command_prefix}'},
+            aliases={
+                f'{self._command_prefix}订阅',
+                f'订阅{self._command_prefix}',
+                *(f'{x}订阅' for x in self._aliases_command_prefix),
+                *(f'订阅{x}' for x in self._aliases_command_prefix),
+            },
             handlers=[
                 get_set_default_state_handler('ensure', value=None),
                 get_command_str_single_arg_parser_handler('sub_id', ensure_key=True)
@@ -223,7 +230,12 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
 
         sub_command_group.command(
             'del-subscription',
-            aliases={f'取消{self._command_prefix}订阅', f'取消订阅{self._command_prefix}'},
+            aliases={
+                f'取消{self._command_prefix}订阅',
+                f'取消订阅{self._command_prefix}',
+                *(f'取消{x}订阅' for x in self._aliases_command_prefix),
+                *(f'取消订阅{x}' for x in self._aliases_command_prefix),
+            },
             handlers=[
                 get_set_default_state_handler('ensure', value=None),
                 get_command_str_single_arg_parser_handler('sub_id', ensure_key=True)
@@ -232,14 +244,20 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
 
         sub_command_group.command(
             'list-subscription',
-            aliases={f'{self._command_prefix}订阅列表'},
+            aliases={
+                f'{self._command_prefix}订阅列表',
+                *(f'{x}订阅列表' for x in self._aliases_command_prefix),
+            },
             permission=None,
             priority=10,
         ).handle()(self._generate_list_subscription_handler())
 
         sub_command_group.command(
             'switch-subscription-notice-at-all',
-            aliases={f'{self._command_prefix}订阅全体通知'},
+            aliases={
+                f'{self._command_prefix}订阅全体通知',
+                *(f'{x}订阅全体通知' for x in self._aliases_command_prefix),
+            },
             handlers=[get_command_str_single_arg_parser_handler('switch')],
             priority=10,
         ).got(
