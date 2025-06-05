@@ -10,16 +10,22 @@
 
 from asyncio import Queue as AsyncQueue
 from datetime import datetime, timedelta
+from typing import Literal
 
 from nonebot.log import logger
 
 from src.exception import PluginException, WebSourceException
 from src.service import scheduler
-from src.utils import run_async_with_time_limited, semaphore_gather
-from .consts import AVERAGE_CHECKING_PER_MINUTE, CHECKING_DELAY_UNDER_RATE_LIMITING, MONITOR_JOB_ID
-from .helpers import bili_dynamic_monitor_main, query_all_subscribed_dynamic_sub_source
+from src.service.omega_subscription_service import BilibiliDynamicSubscriptionManager
+from src.utils import run_async_delay, run_async_with_time_limited, semaphore_gather
 
-_UID_CHECKING_QUEUE: AsyncQueue[int] = AsyncQueue()
+MONITOR_JOB_ID: Literal['bili_dynamic_update_monitor'] = 'bili_dynamic_update_monitor'
+"""动态检查的定时任务 ID"""
+AVERAGE_CHECKING_PER_MINUTE: int = 12
+"""每分钟检查动态的用户数(数值大小影响风控概率, 请谨慎调整)"""
+CHECKING_DELAY_UNDER_RATE_LIMITING: int = 6
+"""被风控时的延迟间隔"""
+_UID_CHECKING_QUEUE: AsyncQueue[str] = AsyncQueue()
 """用于动态更新监控使用的已订阅用户 UID 队列"""
 
 
@@ -27,9 +33,15 @@ class NullBiliDynamicSubscribedSource(PluginException):
     """当前没有任何已订阅的 bilibili 用户动态订阅源"""
 
 
+@run_async_delay(delay_time=8, random_sigma=4)
+async def bili_dynamic_monitor_main(uid: int | str) -> None:
+    """Bilibili用户动态更新监控 Bilibili 用户动态更新"""
+    await BilibiliDynamicSubscriptionManager(uid=uid).check_subscription_source_update_and_send_entity_message()
+
+
 async def _reload_uid_queue() -> None:
     """重新填充动态已订阅用户 UID 待检查队列"""
-    subscribed_uid = await query_all_subscribed_dynamic_sub_source()
+    subscribed_uid = await BilibiliDynamicSubscriptionManager.query_all_subscribed_sub_source_ids()
     if not subscribed_uid:
         logger.debug('BilibiliDynamicMonitor | Null of bilibili dynamic subscription source, ignored')
         raise NullBiliDynamicSubscribedSource
@@ -42,7 +54,7 @@ async def _reload_uid_queue() -> None:
     )
 
 
-async def _get_next_check_uid(num: int) -> list[int]:
+async def _get_next_check_uid(num: int) -> list[str]:
     """从待检查队列中获取接下来检查的用户 UID"""
     logger.debug(f'BilibiliDynamicMonitor | UID queue remaining: {_UID_CHECKING_QUEUE.qsize()}')
     if _UID_CHECKING_QUEUE.empty():
@@ -53,7 +65,7 @@ async def _get_next_check_uid(num: int) -> list[int]:
 
 @run_async_with_time_limited(delay_time=240)
 async def bili_dynamic_update_monitor() -> None:
-    """Bilibili 用户动态订阅 动态更新监控"""
+    """Bilibili用户动态更新监控"""
     logger.debug('BilibiliDynamicMonitor | Started checking bilibili user dynamics update from queue')
 
     try:
@@ -63,7 +75,7 @@ async def bili_dynamic_update_monitor() -> None:
         return
 
     # 检查新作品并发送消息
-    tasks = [bili_dynamic_monitor_main(user_id=uid) for uid in subscribed_uid]
+    tasks = [bili_dynamic_monitor_main(uid=uid) for uid in subscribed_uid]
     sent_result = await semaphore_gather(tasks=tasks, semaphore_num=AVERAGE_CHECKING_PER_MINUTE)
     if any(isinstance(e, WebSourceException) for e in sent_result):
         # 如果 API 异常则大概率被风控, 推迟下一次检查
