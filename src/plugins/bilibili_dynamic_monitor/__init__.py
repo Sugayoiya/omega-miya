@@ -10,8 +10,9 @@
 
 from nonebot.plugin import PluginMetadata
 
-from src.service.omega_subscription_service import SubscriptionHandlerManager, BilibiliDynamicSubscriptionManager
+from src.service import OmegaSubscriptionHandlerManager
 from . import monitor as monitor
+from .subscription_source import BilibiliDynamicSubscriptionManager
 
 __plugin_meta__ = PluginMetadata(
     name='B站用户动态订阅',
@@ -24,7 +25,7 @@ __plugin_meta__ = PluginMetadata(
     extra={'author': 'Ailitonia'},
 )
 
-_bilibili_dynamic_handler_manager = SubscriptionHandlerManager(
+_bilibili_dynamic_handler_manager = OmegaSubscriptionHandlerManager(
     subscription_manager=BilibiliDynamicSubscriptionManager,
     command_prefix='B站用户动态',
 )

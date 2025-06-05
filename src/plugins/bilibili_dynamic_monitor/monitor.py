@@ -16,8 +16,8 @@ from nonebot.log import logger
 
 from src.exception import PluginException, WebSourceException
 from src.service import scheduler
-from src.service.omega_subscription_service import BilibiliDynamicSubscriptionManager
 from src.utils import run_async_delay, run_async_with_time_limited, semaphore_gather
+from .subscription_source import BilibiliDynamicSubscriptionManager
 
 MONITOR_JOB_ID: Literal['bili_dynamic_update_monitor'] = 'bili_dynamic_update_monitor'
 """动态检查的定时任务 ID"""

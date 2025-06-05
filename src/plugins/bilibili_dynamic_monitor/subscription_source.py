@@ -1,9 +1,9 @@
 """
 @Author         : Ailitonia
-@Date           : 2025/6/3 22:16
-@FileName       : bilibili_dynamic
+@Date           : 2025/6/5 22:45
+@FileName       : subscription_source
 @Project        : omega-miya
-@Description    : 哔哩哔哩动态订阅源
+@Description    : 哔哩哔哩动态订阅源实现
 @GitHub         : https://github.com/Ailitonia
 @Software       : PyCharm
 """
@@ -14,12 +14,13 @@ from src.database.internal.social_media_content import SocialMediaContent
 from src.database.internal.subscription_source import SubscriptionSource, SubscriptionSourceType
 from src.exception import WebSourceException
 from src.service import OmegaMessage, OmegaMessageSegment
+from src.service.omega_subscription_service import BaseSubscriptionManager
 from src.utils import semaphore_gather
 from src.utils.bilibili_api import BilibiliDynamic, BilibiliUser
-from ..manager import BaseSubscriptionManager
 
 if TYPE_CHECKING:
     from src.utils.bilibili_api.models.dynamic import DynItem
+
     type SMC_T = DynItem
 
 

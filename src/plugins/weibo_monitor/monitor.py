@@ -14,8 +14,8 @@ from nonebot.log import logger
 
 from src.exception import WebSourceException
 from src.service import reschedule_job, scheduler
-from src.service.omega_subscription_service import WeiboUserSubscriptionManager
 from src.utils import run_async_delay, run_async_with_time_limited, semaphore_gather
+from .subscription_source import WeiboUserSubscriptionManager
 
 _MONITOR_JOB_ID: Literal['weibo_update_monitor'] = 'weibo_update_monitor'
 """微博更新检查的定时任务 ID"""

@@ -19,6 +19,7 @@ from .omega_base import (
 )
 from .omega_global_cache import OmegaGlobalCache
 from .omega_processor import enable_processor_state
+from .omega_subscription_service import OmegaSubscriptionHandlerManager
 
 __all__ = [
     'OmegaEntity',
@@ -28,6 +29,7 @@ __all__ = [
     'OmegaMessage',
     'OmegaMessageSegment',
     'OmegaMessageTransfer',
+    'OmegaSubscriptionHandlerManager',
     'enable_processor_state',
     'reschedule_job',
     'scheduler',

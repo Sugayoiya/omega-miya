@@ -1,9 +1,9 @@
 """
 @Author         : Ailitonia
-@Date           : 2025/6/3 22:21
-@FileName       : weibo
+@Date           : 2025/6/5 22:42
+@FileName       : subscription_source
 @Project        : omega-miya
-@Description    : 微博订阅源
+@Description    : 微博订阅源实现
 @GitHub         : https://github.com/Ailitonia
 @Software       : PyCharm
 """
@@ -15,12 +15,13 @@ from nonebot.log import logger
 from src.database.internal.social_media_content import SocialMediaContent
 from src.database.internal.subscription_source import SubscriptionSource, SubscriptionSourceType
 from src.service import OmegaMessage, OmegaMessageSegment
+from src.service.omega_subscription_service import BaseSubscriptionManager
 from src.utils import semaphore_gather
 from src.utils.weibo_api import Weibo
-from ..manager import BaseSubscriptionManager
 
 if TYPE_CHECKING:
     from src.utils.weibo_api.model import WeiboCard
+
     type SMC_T = WeiboCard
 
 
