@@ -170,6 +170,34 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
 
         return _list_subscription_handler
 
+    def _generate_switch_subscription_notice_at_all_handler(self) -> 'T_Handler':
+        """生成切换订阅通知@所有人开关的流程函数以供注册"""
+
+        async def _switch_subscription_notice_at_all_handler(
+                interface: Annotated[OmMI, Depends(OmMI.depend())],
+                switch: Annotated[str, ArgStr('switch')],
+        ) -> None:
+            switch = switch.strip().lower()
+
+            match switch:
+                case 'on':
+                    switch_coro = self._subscription_manager.enable_entity_notice_at_all_node(interface.entity)
+                case 'off':
+                    switch_coro = self._subscription_manager.disable_entity_notice_at_all_node(interface.entity)
+                case _:
+                    await interface.finish_reply('无效选项, 请输入【ON/OFF】以启用或关闭订阅通知@所有人, 操作已取消')
+
+            try:
+                await switch_coro
+                logger.success(f'{interface.entity} 设置{self._command_prefix}订阅通知@所有人功能为 {switch!r} 成功')
+                await interface.send_reply(f'已设置{self._command_prefix}订阅通知@所有人功能为【{switch.upper()}】')
+            except Exception as e:
+                logger.error(f'{interface.entity} 设置{self._command_prefix}订阅通知@所有人功能为 {switch!r} 失败, {e}')
+                await interface.send_reply(
+                    f'设置{self._command_prefix}订阅通知@所有人功能失败, 请稍后重试或联系管理员处理')
+
+        return _switch_subscription_notice_at_all_handler
+
     def register_handlers(self) -> CommandGroup:
         """注册插件命令"""
 
@@ -181,7 +209,6 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
             state=enable_processor_state(
                 name=f'{self.sub_type.title().replace('_', '').strip()}SubscriptionManager',
                 level=20,
-                extra_auth_node={self._subscription_manager.SETTING_NODE_NOTICE_AT_ALL},
             ),
         )
 
@@ -191,7 +218,7 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
             handlers=[
                 get_set_default_state_handler('ensure', value=None),
                 get_command_str_single_arg_parser_handler('sub_id', ensure_key=True)
-            ]
+            ],
         ).got('ensure')(self._generate_add_subscription_handler())
 
         sub_command_group.command(
@@ -200,15 +227,25 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
             handlers=[
                 get_set_default_state_handler('ensure', value=None),
                 get_command_str_single_arg_parser_handler('sub_id', ensure_key=True)
-            ]
+            ],
         ).got('ensure')(self._generate_del_subscription_handler())
 
         sub_command_group.command(
             'list-subscription',
             aliases={f'{self._command_prefix}订阅列表'},
             permission=None,
-            priority=10
+            priority=10,
         ).handle()(self._generate_list_subscription_handler())
+
+        sub_command_group.command(
+            'switch-subscription-notice-at-all',
+            aliases={f'{self._command_prefix}订阅全体通知'},
+            handlers=[get_command_str_single_arg_parser_handler('switch')],
+            priority=10,
+        ).got(
+            'switch',
+            prompt=f'启用或关闭{self._command_prefix}订阅通知@所有人功能:\n【ON/OFF】'
+        )(self._generate_switch_subscription_notice_at_all_handler())
 
         return sub_command_group
 

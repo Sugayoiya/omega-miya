@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
     """订阅服务管理基类"""
 
-    SETTING_NODE_NOTICE_AT_ALL: ClassVar[Literal['notice_at_all']] = 'notice_at_all'
+    _SETTING_NODE_NOTICE_AT_ALL: ClassVar[Literal['notice_at_all']] = 'notice_at_all'
     """添加插件配置时的通知@全体的节点名称"""
 
     __slots__ = ('sub_id',)
@@ -243,16 +243,37 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
         """处理订阅源内容为消息"""
         raise NotImplementedError
 
-    async def _check_entity_has_notice_at_all_node(self, entity: 'OmegaEntity') -> bool:
+    @classmethod
+    async def enable_entity_notice_at_all_node(cls, entity: 'OmegaEntity') -> None:
+        """启用目标 Entity 通知@所有人的权限"""
+        await entity.set_auth_setting(
+            module=f'Omega.{cls.__name__}',
+            plugin=cls.get_sub_type(),
+            node=cls._SETTING_NODE_NOTICE_AT_ALL,
+            available=1,
+        )
+
+    @classmethod
+    async def disable_entity_notice_at_all_node(cls, entity: 'OmegaEntity') -> None:
+        """禁用目标 Entity 通知@所有人的权限"""
+        await entity.set_auth_setting(
+            module=f'Omega.{cls.__name__}',
+            plugin=cls.get_sub_type(),
+            node=cls._SETTING_NODE_NOTICE_AT_ALL,
+            available=0,
+        )
+
+    @classmethod
+    async def _check_entity_has_notice_at_all_node(cls, entity: 'OmegaEntity') -> bool:
         """检查目标 Entity 是否具有通知@所有人的权限"""
         try:
             return await entity.check_auth_setting(
-                module=self.__class__.__name__,
-                plugin=self.get_sub_type(),
-                node=self.SETTING_NODE_NOTICE_AT_ALL,
+                module=f'Omega.{cls.__name__}',
+                plugin=cls.get_sub_type(),
+                node=cls._SETTING_NODE_NOTICE_AT_ALL,
             )
         except Exception as e:
-            logger.warning(f'{self} | Checking {entity} notice at all node failed, {e!r}')
+            logger.warning(f'{cls.__name__} | Checking {entity} notice at all node failed, {e!r}')
             return False
 
     async def _sender_entity_message(self, entity: 'Entity', message: str | OmegaMessage) -> None:
