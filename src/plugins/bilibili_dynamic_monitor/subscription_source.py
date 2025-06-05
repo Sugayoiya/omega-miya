@@ -51,6 +51,7 @@ class BilibiliDynamicSubscriptionManager(BaseSubscriptionManager['SMC_T']):
             'm_uid': str(smc_item.modules.module_author.mid),
             'title': f'{smc_item.modules.module_author.name}的动态',
             'content': smc_item.dyn_text,
+            'ref_content': '',
         })
 
     async def _query_sub_source_smc_items(self) -> 'list[SMC_T]':

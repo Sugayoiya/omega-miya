@@ -28,6 +28,7 @@ __plugin_meta__ = PluginMetadata(
 _bilibili_dynamic_handler_manager = OmegaSubscriptionHandlerManager(
     subscription_manager=BilibiliDynamicSubscriptionManager,
     command_prefix='B站用户动态',
+    aliases_command_prefix={'bilibili动态', 'Bilibili动态', 'bilibili用户动态', 'Bilibili用户动态', 'b站用户动态'}
 )
 _bilibili_dynamic = _bilibili_dynamic_handler_manager.register_handlers()
 """注册B站用户动态订阅流程 Handlers"""
