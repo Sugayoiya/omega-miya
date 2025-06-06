@@ -90,6 +90,10 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
 
             try:
                 sub_source_data = await self._get_manager(sub_id).query_sub_source_data()
+                # 针对订阅请求的 ID 为短号等场景进行 ID 转换处理
+                if sub_id != sub_source_data.sub_id:
+                    logger.debug(f'订阅{self._command_prefix}请求 ID={sub_id!r} 已转换为 {sub_source_data.sub_id!r}')
+                    interface.matcher.state.update({'sub_id': sub_source_data.sub_id})
             except Exception as e:
                 logger.error(f'获取订阅{self._command_prefix}({sub_id})信息失败, {e!r}')
                 await interface.finish_reply('获取订阅源信息失败, 可能是网络原因或没有这个订阅源, 请稍后再试')
