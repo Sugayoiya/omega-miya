@@ -28,6 +28,7 @@ __plugin_meta__ = PluginMetadata(
 _weibo_handler_manager = OmegaSubscriptionHandlerManager(
     subscription_manager=WeiboUserSubscriptionManager,
     command_prefix='微博',
+    aliases_command_prefix={'微博用户'},
 )
 _weibo = _weibo_handler_manager.register_handlers()
 """注册微博订阅流程 Handlers"""
