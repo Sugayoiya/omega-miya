@@ -73,8 +73,8 @@ class WeiboUserSubscriptionManager(BaseSubscriptionManager['SMC_T']):
             'sub_info': '微博用户订阅',
         })
 
-    @staticmethod
-    async def _format_smc_item_message(smc_item: 'SMC_T') -> str | OmegaMessage:
+    @classmethod
+    async def _format_smc_item_message(cls, smc_item: 'SMC_T') -> str | OmegaMessage:
         send_message = f'【微博】{smc_item.mblog.user.screen_name}'
         img_urls = []
 

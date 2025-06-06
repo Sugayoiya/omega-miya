@@ -33,6 +33,7 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
             *,
             aliases_command_prefix: set[str] | None = None,
             need_digit_sub_id: bool = False,
+            default_sub_id: str | None = None,
     ) -> None:
         self._subscription_manager = subscription_manager
         self._command_prefix = command_prefix
@@ -40,6 +41,7 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
 
         # 相关插件配置参数
         self._need_digit_sub_id = need_digit_sub_id
+        self._default_sub_id = default_sub_id
 
     def __str__(self) -> str:
         return f'SubscriptionHandlerManager | {self.sub_type.upper()}'
@@ -56,6 +58,35 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
     def _generate_add_subscription_handler(self) -> 'T_Handler':
         """生成新增订阅流程函数以供注册"""
 
+        async def _interface_entity_add_subscription(
+                interface: Annotated[OmMI, Depends(OmMI.depend())],
+                sub_id: str,
+        ) -> None:
+            """为 Entity 添加订阅"""
+            await interface.send_reply(f'正在更新{self._command_prefix}订阅信息, 请稍候')
+
+            # 暂停计划任务避免中途检查更新
+            scheduler.pause()
+
+            try:
+                await self._get_manager(sub_id).add_entity_sub(interface=interface)
+                await interface.entity.commit_session()
+                logger.success(f'{interface.entity}订阅{self._command_prefix}({sub_id})成功')
+                msg = f'订阅{self._command_prefix}: {sub_id}成功'
+            except Exception as e:
+                logger.error(f'{interface.entity}订阅{self._command_prefix}({sub_id})失败, {e!r}')
+                msg = f'订阅{self._command_prefix}: {sub_id}失败, 可能是网络异常或发生了意外的错误, 请稍后再试或联系管理员处理'
+
+            # 恢复计划任务
+            scheduler.resume()
+            await interface.finish_reply(msg)
+
+        async def _add_subscription_handler_with_default_sub_id(
+                interface: Annotated[OmMI, Depends(OmMI.depend())],
+        ) -> None:
+            if self._default_sub_id is not None:
+                await _interface_entity_add_subscription(interface=interface, sub_id=self._default_sub_id)
+
         async def _add_subscription_handler(
                 interface: Annotated[OmMI, Depends(OmMI.depend())],
                 ensure: Annotated[str | None, ArgStr('ensure')],
@@ -65,19 +96,7 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
             if ensure is None or sub_id is None:
                 pass
             elif ensure in ['是', '确认', 'Yes', 'yes', 'Y', 'y']:
-                await interface.send_reply(f'正在更新{self._command_prefix}订阅信息, 请稍候')
-
-                scheduler.pause()  # 暂停计划任务避免中途检查更新
-                try:
-                    await self._get_manager(sub_id).add_entity_sub(interface=interface)
-                    await interface.entity.commit_session()
-                    logger.success(f'{interface.entity}订阅{self._command_prefix}({sub_id})成功')
-                    msg = f'订阅{self._command_prefix}: {sub_id}成功'
-                except Exception as e:
-                    logger.error(f'{interface.entity}订阅{self._command_prefix}({sub_id})失败, {e!r}')
-                    msg = f'订阅{self._command_prefix}: {sub_id}失败, 可能是网络异常或发生了意外的错误, 请稍后再试或联系管理员处理'
-                scheduler.resume()
-                await interface.finish_reply(msg)
+                await _interface_entity_add_subscription(interface=interface, sub_id=sub_id)
             else:
                 await interface.finish_reply('已取消操作')
 
@@ -101,10 +120,34 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
             ensure_msg = f'即将订阅{self._command_prefix}【{sub_source_data.sub_user_name}】\n\n确认吗?\n【是/否】'
             await interface.reject_arg_reply('ensure', ensure_msg)
 
-        return _add_subscription_handler
+        if self._default_sub_id is not None:
+            return _add_subscription_handler_with_default_sub_id
+        else:
+            return _add_subscription_handler
 
     def _generate_del_subscription_handler(self) -> 'T_Handler':
         """生成移除订阅流程函数以供注册"""
+
+        async def _interface_entity_del_subscription(
+                interface: Annotated[OmMI, Depends(OmMI.depend())],
+                sub_id: str,
+        ) -> None:
+            """为 Entity 删除订阅"""
+            try:
+                await self._get_manager(sub_id).delete_entity_sub(interface=interface)
+                await interface.entity.commit_session()
+                logger.success(f'{interface.entity}取消订阅{self._command_prefix}({sub_id})成功')
+                msg = f'取消订阅{self._command_prefix}: {sub_id}成功'
+            except Exception as e:
+                logger.error(f'{interface.entity}取消订阅{self._command_prefix}({sub_id})失败, {e!r}')
+                msg = f'取消订阅{self._command_prefix}: {sub_id}失败, 请稍后再试或联系管理员处理'
+            await interface.finish_reply(msg)
+
+        async def _del_subscription_handler_with_default_sub_id(
+                interface: Annotated[OmMI, Depends(OmMI.depend())],
+        ) -> None:
+            if self._default_sub_id is not None:
+                await _interface_entity_del_subscription(interface=interface, sub_id=self._default_sub_id)
 
         async def _del_subscription_handler(
                 interface: Annotated[OmMI, Depends(OmMI.depend())],
@@ -115,15 +158,7 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
             if ensure is None or sub_id is None:
                 pass
             elif ensure in ['是', '确认', 'Yes', 'yes', 'Y', 'y']:
-                try:
-                    await self._get_manager(sub_id).delete_entity_sub(interface=interface)
-                    await interface.entity.commit_session()
-                    logger.success(f'{interface.entity}取消订阅{self._command_prefix}({sub_id})成功')
-                    msg = f'取消订阅{self._command_prefix}: {sub_id}成功'
-                except Exception as e:
-                    logger.error(f'{interface.entity}取消订阅{self._command_prefix}({sub_id})失败, {e!r}')
-                    msg = f'取消订阅{self._command_prefix}: {sub_id}失败, 请稍后再试或联系管理员处理'
-                await interface.finish_reply(msg)
+                await _interface_entity_del_subscription(interface=interface, sub_id=sub_id)
             else:
                 await interface.finish_reply('已取消操作')
 
@@ -156,7 +191,10 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
             else:
                 await interface.matcher.finish()
 
-        return _del_subscription_handler
+        if self._default_sub_id is not None:
+            return _del_subscription_handler_with_default_sub_id
+        else:
+            return _del_subscription_handler
 
     def _generate_list_subscription_handler(self) -> 'T_Handler':
         """生成查询订阅列表流程函数以供注册"""

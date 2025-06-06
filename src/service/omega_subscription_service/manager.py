@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 
 
 class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
-    """订阅服务管理基类"""
+    """订阅服务管理基类(SMC: SubscriptionMainContent 订阅源内容)"""
 
     _SETTING_NODE_NOTICE_AT_ALL: ClassVar[Literal['notice_at_all']] = 'notice_at_all'
     """添加插件配置时的通知@全体的节点名称"""
@@ -127,7 +127,7 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
     @staticmethod
     @abc.abstractmethod
     def _get_smc_item_mid(smc_item: 'SMC_T') -> str:
-        """获取订阅源内容对应的 SocialMediaContent mid"""
+        """获取订阅源内容对应的唯一索引 ID"""
         raise NotImplementedError
 
     @classmethod
@@ -138,7 +138,7 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
 
     @classmethod
     async def _check_new_smc_item(cls, smc_items: 'Iterable[SMC_T]') -> 'list[SMC_T]':
-        """根据 SocialMediaContent mid 检查新的订阅源内容(数据库中没有的)"""
+        """根据内容对应的唯一索引 ID 检查新的订阅源内容(数据库中没有的)"""
         async with begin_db_session() as session:
             all_mids = [cls._get_smc_item_mid(x) for x in smc_items]
             new_mids = await SocialMediaContentDAL(session=session).query_source_not_exists_mids(
@@ -159,7 +159,7 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
 
     @classmethod
     async def _add_upgrade_smc_item(cls, smc_item: 'SMC_T') -> None:
-        """在数据库中添加订阅源对应 SocialMediaContent 内容"""
+        """在数据库中写入订阅源内容"""
         parsed_smc_item = cls._parse_smc_item(smc_item)
         async with begin_db_session() as session:
             await SocialMediaContentDAL(session=session).upsert(
@@ -237,9 +237,9 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
 
     """消息处理和发送管理部分"""
 
-    @staticmethod
+    @classmethod
     @abc.abstractmethod
-    async def _format_smc_item_message(smc_item: 'SMC_T') -> str | OmegaMessage:
+    async def _format_smc_item_message(cls, smc_item: 'SMC_T') -> str | OmegaMessage:
         """处理订阅源内容为消息"""
         raise NotImplementedError
 

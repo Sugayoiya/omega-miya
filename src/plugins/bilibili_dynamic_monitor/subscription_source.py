@@ -71,8 +71,8 @@ class BilibiliDynamicSubscriptionManager(BaseSubscriptionManager['SMC_T']):
             'sub_info': 'Bilibili用户动态订阅',
         })
 
-    @staticmethod
-    async def _format_smc_item_message(smc_item: 'SMC_T') -> str | OmegaMessage:
+    @classmethod
+    async def _format_smc_item_message(cls, smc_item: 'SMC_T') -> str | OmegaMessage:
         send_message = f'【bilibili】{smc_item.dyn_text}\n'
 
         # 下载动态中包含的图片
