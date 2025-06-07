@@ -297,8 +297,8 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
         sub_command_group.command(
             'switch-subscription-notice-at-all',
             aliases={
-                f'{self._command_prefix}订阅全体通知',
-                *(f'{x}订阅全体通知' for x in self._aliases_command_prefix),
+                f'{self._command_prefix}订阅全体通知开关',
+                *(f'{x}订阅全体通知开关' for x in self._aliases_command_prefix),
             },
             handlers=[get_command_str_single_arg_parser_handler('switch')],
             priority=10,

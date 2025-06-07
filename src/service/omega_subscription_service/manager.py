@@ -206,7 +206,7 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
         source_res = await self._add_upgrade_sub_source()
         await interface.entity.add_subscription(
             subscription_source=source_res,
-            sub_info=f'订阅类型: {source_res.sub_type}, 订阅ID: {source_res.sub_id})',
+            sub_info=f'订阅类型: {source_res.sub_type}, 订阅ID: {source_res.sub_id}',
         )
 
     async def delete_entity_sub(self, interface: 'OmMI') -> None:
