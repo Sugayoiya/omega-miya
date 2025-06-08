@@ -35,6 +35,13 @@ class BasePixivAPI(BaseCommonAPI):
         return pixiv_config.cookie_phpssid
 
     @classmethod
+    def _get_default_user_id(cls) -> str:
+        """获取由 cookies 定义的默认用户 ID"""
+        if pixiv_config.pixiv_phpsessid is None:
+            raise ValueError('未配置 Pixiv Cookie, 无默认用户 ID')
+        return pixiv_config.pixiv_phpsessid.split('_')[0]
+
+    @classmethod
     async def get_resource_as_bytes(cls, url: str, *, params: 'QueryTypes' = None, timeout: int = 30) -> bytes:
         """请求原始资源内容"""
         return await cls._get_resource_as_bytes(url, params, timeout=timeout)

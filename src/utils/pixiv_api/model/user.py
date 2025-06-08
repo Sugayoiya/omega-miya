@@ -33,8 +33,8 @@ class _GlobalUserData(BasePixivModel):
     readingStatusEnabled: bool
 
 
-class PixivGlobalData(BasePixivModel):
-    """Pixiv 主页全局数据"""
+class _PixivGlobalData(BasePixivModel):
+    """[Deactivated]Pixiv 主页全局数据(新版 Next 首页已无该内容)"""
     token: str
     services: dict
     oneSignalAppId: str
@@ -197,7 +197,7 @@ class BookmarkWork(BasePixivModel):
     alt: str
     titleCaptionTranslation: dict
     createDate: str
-    updateDate:str
+    updateDate: str
     isUnlisted: bool
     isMasked: bool
     aiType: int
@@ -307,7 +307,6 @@ class PixivFollowUser(BasePixivModel):
 
 
 __all__ = [
-    'PixivGlobalData',
     'PixivUserDataModel',
     'PixivUserArtworkDataModel',
     'PixivUserModel',

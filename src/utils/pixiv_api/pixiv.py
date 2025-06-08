@@ -10,7 +10,7 @@
 
 import re
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Self
 from urllib.parse import quote
 
 from pydantic import ValidationError
@@ -28,7 +28,6 @@ from .model import (
     PixivDiscoveryModel,
     PixivFollowLatestIllust,
     PixivFollowUser,
-    PixivGlobalData,
     PixivRankingModel,
     PixivSearchingResultModel,
     PixivTopModel,
@@ -41,12 +40,6 @@ from .model import (
 
 class PixivCommon(BasePixivAPI):
     """Pixiv 主站通用接口"""
-
-    @classmethod
-    async def query_global_data(cls) -> PixivGlobalData:
-        """获取全局信息(需要 cookies)"""
-        root_page_content = await cls.get_resource_as_text(url=cls._get_root_url())
-        return await PixivParser.parse_global_data(content=root_page_content)
 
     @classmethod
     async def query_ranking(
@@ -205,10 +198,7 @@ class PixivCommon(BasePixivAPI):
             version: str | None = None
     ) -> PixivBookmark:
         """获取收藏(需要 cookies)"""
-        if uid is None:
-            global_data = await cls.query_global_data()
-            uid = global_data.uid
-
+        uid = cls._get_default_user_id() if uid is None else uid
         url = f'https://www.pixiv.net/ajax/user/{uid}/illusts/bookmarks'
         params = {'tag': tag, 'offset': offset, 'limit': limit, 'rest': rest, 'lang': lang}
         if version is not None:
@@ -365,11 +355,11 @@ class PixivArtwork(PixivCommon):
 class PixivUser(PixivCommon):
     """Pixiv 用户接口集成"""
 
-    def __init__(self, uid: int):
-        self.uid = uid
-        self.user_url = f'{self._get_root_url()}/users/{uid}'
-        self.data_url = f'{self._get_root_url()}/ajax/user/{uid}'
-        self.profile_url = f'{self._get_root_url()}/ajax/user/{uid}/profile/all'
+    def __init__(self, uid: int | str):
+        self.uid = str(uid)
+        self.user_url = f'{self._get_root_url()}/users/{self.uid}'
+        self.data_url = f'{self._get_root_url()}/ajax/user/{self.uid}'
+        self.profile_url = f'{self._get_root_url()}/ajax/user/{self.uid}/profile/all'
         self.follow_user_url = f'https://www.pixiv.net/ajax/user/{self.uid}/following'
 
         # 实例缓存
@@ -377,6 +367,10 @@ class PixivUser(PixivCommon):
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(uid={self.uid})'
+
+    @classmethod
+    def init_default_user(cls) -> Self:
+        return cls(uid=cls._get_default_user_id())
 
     @classmethod
     async def search_user(
