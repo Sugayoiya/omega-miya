@@ -37,6 +37,10 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
 
     _SETTING_NODE_NOTICE_AT_ALL: ClassVar[Literal['notice_at_all']] = 'notice_at_all'
     """添加插件配置时的通知@全体的节点名称"""
+    _LIMIT_SMC_PROCESSING_NUMBER: ClassVar[int] = 8
+    """限制异步同时处理订阅源内容的数量, 避免订阅源端流控限制"""
+    _LIMIT_SMC_SEND_ENTITY: ClassVar[int] = 2
+    """限制异步同时发送订阅源内容的对象数量, 避免机器人平台端流控限制"""
 
     __slots__ = ('sub_id',)
     sub_id: str
@@ -176,7 +180,7 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
         """在数据库中更新订阅源的所有新内容(仅新增不更新)"""
         new_smc_items = await self._query_sub_source_new_smc_items()
         tasks = [self._add_upgrade_smc_item(smc_item=smc_item) for smc_item in new_smc_items]
-        await semaphore_gather(tasks=tasks, semaphore_num=8, return_exceptions=False)
+        await semaphore_gather(tasks=tasks, semaphore_num=self._LIMIT_SMC_PROCESSING_NUMBER, return_exceptions=False)
 
     """Entity 对象订阅管理部分"""
 
@@ -302,7 +306,7 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
             self._sender_entity_message(entity=entity, message=send_message)
             for entity in subscribed_entity
         ]
-        await semaphore_gather(tasks=send_tasks, semaphore_num=2)
+        await semaphore_gather(tasks=send_tasks, semaphore_num=self._LIMIT_SMC_SEND_ENTITY)
 
     async def check_subscription_source_update_and_send_entity_message(self) -> None:
         """检查订阅源更新并向已订阅的对象发送新订阅内容信息"""
@@ -320,14 +324,18 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
 
         # 更新内容先插入数据库避免发送失败后重复发送
         add_artwork_tasks = [self._add_upgrade_smc_item(smc_item=smc_item) for smc_item in new_smc_items]
-        await semaphore_gather(tasks=add_artwork_tasks, semaphore_num=8, return_exceptions=False)
+        await semaphore_gather(
+            tasks=add_artwork_tasks,
+            semaphore_num=self._LIMIT_SMC_PROCESSING_NUMBER,
+            return_exceptions=False,
+        )
 
         # 向订阅者发送订阅更新信息
         send_tasks = [
             self._send_subscribed_entity_smc_message(smc_item=smc_item)
             for smc_item in new_smc_items
         ]
-        await semaphore_gather(tasks=send_tasks, semaphore_num=2)
+        await semaphore_gather(tasks=send_tasks, semaphore_num=self._LIMIT_SMC_SEND_ENTITY)
 
 
 __all__ = [

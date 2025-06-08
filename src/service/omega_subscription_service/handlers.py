@@ -242,17 +242,25 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
 
         return _switch_subscription_notice_at_all_handler
 
-    def register_handlers(self) -> CommandGroup:
+    def register_handlers(
+            self,
+            *,
+            priority: int = 20,
+            block: bool = True,
+            permission_level: int = 20,
+            handler_echo_processor_result: bool = True,
+    ) -> CommandGroup:
         """注册插件命令"""
 
         sub_command_group = CommandGroup(
             f'{self.sub_type}-subscription-manager'.replace('_', '-').strip(),
             permission=IS_ADMIN,
-            priority=20,
-            block=True,
+            priority=priority,
+            block=block,
             state=enable_processor_state(
                 name=f'{self.sub_type.title().replace('_', '').strip()}SubscriptionManager',
-                level=20,
+                level=permission_level,
+                echo_processor_result=handler_echo_processor_result,
             ),
         )
 
