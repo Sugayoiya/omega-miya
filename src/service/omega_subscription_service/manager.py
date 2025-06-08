@@ -9,7 +9,7 @@
 """
 
 import abc
-from collections.abc import Iterable
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self
 
 from nonebot.exception import ActionFailed
@@ -141,7 +141,7 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
         raise NotImplementedError
 
     @classmethod
-    async def _check_new_smc_item(cls, smc_items: 'Iterable[SMC_T]') -> 'list[SMC_T]':
+    async def _check_new_smc_item(cls, smc_items: 'Sequence[SMC_T]') -> 'list[SMC_T]':
         """根据内容对应的唯一索引 ID 检查新的订阅源内容(数据库中没有的)"""
         async with begin_db_session() as session:
             all_mids = [cls._get_smc_item_mid(x) for x in smc_items]
@@ -151,6 +151,11 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
             )
         return [x for x in smc_items if cls._get_smc_item_mid(x) in new_mids]
 
+    @classmethod
+    async def _filter_new_smc_item(cls, smc_items: 'Sequence[SMC_T]') -> 'list[SMC_T]':
+        """对新的订阅源内容进行过滤, 对本方法进行重载以自定义需要更新和通知的内容"""
+        return list(smc_items)
+
     @abc.abstractmethod
     async def _query_sub_source_smc_items(self) -> 'list[SMC_T]':
         """获取订阅源现有的所有内容"""
@@ -159,7 +164,8 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
     async def _query_sub_source_new_smc_items(self) -> 'list[SMC_T]':
         """获取订阅源现有的更新内容"""
         all_smc_items = await self._query_sub_source_smc_items()
-        return await self._check_new_smc_item(smc_items=all_smc_items)
+        new_smc_items = await self._check_new_smc_item(smc_items=all_smc_items)
+        return await self._filter_new_smc_item(smc_items=new_smc_items)
 
     @classmethod
     async def _add_upgrade_smc_item(cls, smc_item: 'SMC_T') -> None:
@@ -243,7 +249,7 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    async def _format_smc_item_message(cls, smc_item: 'SMC_T') -> str | OmegaMessage:
+    async def _format_smc_item_message(cls, smc_item: 'SMC_T') -> str | OmegaMessage | None:
         """处理订阅源内容为消息"""
         raise NotImplementedError
 
@@ -301,6 +307,10 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
     async def _send_subscribed_entity_smc_message(self, smc_item: 'SMC_T') -> None:
         """向所有订阅了该订阅源的 Entity 订阅者发送新订阅内容信息"""
         send_message = await self._format_smc_item_message(smc_item=smc_item)
+        if send_message is None:
+            logger.debug(f'{self} | Sending message is None, {smc_item!r}, ignored')
+            return
+
         subscribed_entity = await self.query_subscribed_entity_by_sub_source()
         send_tasks = [
             self._sender_entity_message(entity=entity, message=send_message)

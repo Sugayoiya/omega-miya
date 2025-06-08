@@ -8,7 +8,7 @@
 @Software       : PyCharm
 """
 
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, ClassVar, Self
 
 from src.database.internal.social_media_content import SocialMediaContent
 from src.database.internal.subscription_source import SubscriptionSource, SubscriptionSourceType
@@ -17,6 +17,7 @@ from src.service import OmegaMessage, OmegaMessageSegment
 from src.service.omega_subscription_service import BaseSubscriptionManager
 from src.utils import semaphore_gather
 from src.utils.bilibili_api import BilibiliDynamic, BilibiliUser
+from src.utils.bilibili_api.models.dynamic import DynamicType
 
 if TYPE_CHECKING:
     from src.utils.bilibili_api.models.dynamic import DynItem
@@ -26,6 +27,13 @@ if TYPE_CHECKING:
 
 class BilibiliDynamicSubscriptionManager(BaseSubscriptionManager['SMC_T']):
     """Bilibili 动态订阅服务管理"""
+
+    _IGNORE_NOTICE_DYNAMIC_TYPES: ClassVar[list[DynamicType]] = [
+        DynamicType.live_rcmd,
+        DynamicType.ad,
+        DynamicType.applet,
+    ]
+    """在通知时忽略的动态类型"""
 
     def __init__(self, uid: str | int) -> None:
         self.sub_id = str(uid)
@@ -72,7 +80,10 @@ class BilibiliDynamicSubscriptionManager(BaseSubscriptionManager['SMC_T']):
         })
 
     @classmethod
-    async def _format_smc_item_message(cls, smc_item: 'SMC_T') -> str | OmegaMessage:
+    async def _format_smc_item_message(cls, smc_item: 'SMC_T') -> str | OmegaMessage | None:
+        if smc_item.type in cls._IGNORE_NOTICE_DYNAMIC_TYPES:
+            return None
+
         send_message = f'【bilibili】{smc_item.dyn_text}\n'
 
         # 下载动态中包含的图片

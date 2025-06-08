@@ -141,27 +141,6 @@ class BilibiliLiveRoomStatusUpdate(BaseModel):
     def update_type(self) -> str:
         return self.update.__class__.__name__ if self.update is not None else 'BilibiliLiveRoomHoldingState'
 
-    @property
-    def need_notice(self) -> bool:
-        """直播间状态更新是否需要进行通知"""
-        if not self.update:
-            # 状态未更新
-            return False
-        elif isinstance(
-                self.update,
-                BilibiliLiveRoomStartLiving
-                | BilibiliLiveRoomStartLivingWithUpdateTitle
-                | BilibiliLiveRoomStopLiving
-                | BilibiliLiveRoomStopLivingWithPlaylist
-        ):
-            # 开播状态变化
-            return True
-        elif isinstance(self.update, BilibiliLiveRoomTitleChange) and self.status.live_status == 1:
-            # 直播中更换标题
-            return True
-        else:
-            return False
-
 
 __all__ = [
     'BilibiliLiveRoomStatus',

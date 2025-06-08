@@ -9,7 +9,7 @@
 """
 
 from asyncio import sleep as async_sleep
-from collections.abc import Callable, Coroutine, Iterable, Sequence
+from collections.abc import Callable, Coroutine, Sequence
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal, Self
 
@@ -62,8 +62,8 @@ class PixivUserSubscriptionManager(BaseSubscriptionManager['SMC_T']):
         raise NotImplementedError
 
     @classmethod
-    async def _check_new_smc_item(cls, smc_items: 'Iterable[SMC_T]') -> 'list[SMC_T]':
-        return await PixivArtworkCollection.query_not_exists_aids(aids=list(smc_items))
+    async def _check_new_smc_item(cls, smc_items: 'Sequence[SMC_T]') -> 'list[SMC_T]':
+        return await PixivArtworkCollection.query_not_exists_aids(aids=smc_items)
 
     async def _query_sub_source_smc_items(self) -> 'list[SMC_T]':
         user_data = await PixivUser(uid=self.uid).query_user_data()

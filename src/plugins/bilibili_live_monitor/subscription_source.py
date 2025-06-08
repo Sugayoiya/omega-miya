@@ -9,7 +9,7 @@
 """
 
 from asyncio import Lock as AsyncLock
-from collections.abc import Iterable
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, ClassVar, Self
 
@@ -75,10 +75,10 @@ class BilibiliLiveRoomSubscriptionManager(BaseSubscriptionManager['SMC_T']):
         })
 
     @classmethod
-    async def _update_internal_live_room_status(cls, room_ids: Iterable[int | str]) -> None:
+    async def _update_internal_live_room_status(cls, room_ids: Sequence[int | str]) -> None:
         """更新类内部直播间状态缓存并刷新过期时间"""
         try:
-            rooms_info = await BilibiliLive.query_room_info_by_room_id_list(room_id_list=list(room_ids))
+            rooms_info = await BilibiliLive.query_room_info_by_room_id_list(room_id_list=room_ids)
             if rooms_info.error:
                 raise WebSourceException(500, f'{rooms_info.code}, {rooms_info.message}')
 
@@ -166,8 +166,8 @@ class BilibiliLiveRoomSubscriptionManager(BaseSubscriptionManager['SMC_T']):
         })
 
     @classmethod
-    async def _check_new_smc_item(cls, smc_items: 'Iterable[SMC_T]') -> 'list[SMC_T]':
-        return [x for x in smc_items if x.need_notice]
+    async def _check_new_smc_item(cls, smc_items: 'Sequence[SMC_T]') -> 'list[SMC_T]':
+        return [x for x in smc_items if x.is_update]
 
     async def _query_sub_source_smc_items(self) -> 'list[SMC_T]':
         live_room_status = await self._query_live_room_latest_status()
@@ -184,7 +184,7 @@ class BilibiliLiveRoomSubscriptionManager(BaseSubscriptionManager['SMC_T']):
         })
 
     @classmethod
-    async def _format_smc_item_message(cls, smc_item: 'SMC_T') -> str | OmegaMessage:
+    async def _format_smc_item_message(cls, smc_item: 'SMC_T') -> str | OmegaMessage | None:
         send_message = '【bilibili直播间】\n'
         need_url = False
 
@@ -207,7 +207,7 @@ class BilibiliLiveRoomSubscriptionManager(BaseSubscriptionManager['SMC_T']):
             send_message += f'{smc_item.status.live_user_name}的直播间换标题啦！\n\n【{smc_item.status.live_title}】'
             need_url = True
         else:
-            raise RuntimeError(f'Unexpected update status: {smc_item.update}')
+            return None
 
         # 下载直播间封面图
         if smc_item.status.live_cover_url:
