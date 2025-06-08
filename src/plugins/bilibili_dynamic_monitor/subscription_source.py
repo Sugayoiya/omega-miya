@@ -1,7 +1,7 @@
 """
 @Author         : Ailitonia
 @Date           : 2025/6/5 22:45
-@FileName       : subscription_source
+@FileName       : subscription_source.py
 @Project        : omega-miya
 @Description    : 哔哩哔哩动态订阅源实现
 @GitHub         : https://github.com/Ailitonia
