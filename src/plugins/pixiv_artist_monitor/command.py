@@ -38,7 +38,7 @@ _pixiv_artist_subscription_manager = OmegaSubscriptionHandlerManager(
     },
 )
 
-_pixiv_artist_subscription = _pixiv_artist_subscription_manager.register_handlers()
+_pixiv_artist_subscription = _pixiv_artist_subscription_manager.register_handlers(permission_level=30)
 """注册 Pixiv 用户作品订阅流程 Handlers"""
 
 
