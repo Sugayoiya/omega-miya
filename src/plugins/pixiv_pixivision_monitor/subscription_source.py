@@ -32,6 +32,9 @@ if TYPE_CHECKING:
 class PixivisionSubscriptionManager(BaseSubscriptionManager['SMC_T']):
     """Pixivision 订阅服务管理"""
 
+    _LIMIT_SMC_PROCESSING_NUMBER = 2
+    _LIMIT_SMC_ARTWORK_PROCESSING_NUMBER = 4
+
     def __init__(self) -> None:
         self.sub_id = 'pixivision'
 
@@ -60,14 +63,18 @@ class PixivisionSubscriptionManager(BaseSubscriptionManager['SMC_T']):
         articles_data = await Pixivision.query_illustration_list()
         return articles_data.illustrations[:8]
 
-    @staticmethod
-    async def _add_pixivision_article_artworks_into_database(article_data: 'PixivisionArticle') -> None:
+    @classmethod
+    async def _add_pixivision_article_artworks_into_database(cls, article_data: 'PixivisionArticle') -> None:
         """向数据库中写入 Pixivision 特辑文章中的作品"""
         add_artwork_tasks = [
             PixivArtworkCollection(x.artwork_id).add_artwork_into_database_ignore_exists()
             for x in article_data.artwork_list
         ]
-        await semaphore_gather(tasks=add_artwork_tasks, semaphore_num=8, return_exceptions=False)
+        await semaphore_gather(
+            tasks=add_artwork_tasks,
+            semaphore_num=cls._LIMIT_SMC_ARTWORK_PROCESSING_NUMBER,
+            return_exceptions=False,
+        )
 
     @classmethod
     async def _add_upgrade_smc_item(cls, smc_item: 'SMC_T') -> None:
