@@ -175,20 +175,10 @@ async def handle_preview_user_bookmark(
         interface: Annotated[OmMI, Depends(OmMI.depend())],
         state: T_State,
 ) -> None:
-    user_id = state.get('user_id_page_0')
+    user_id = state.get('user_id_page_0', None)
 
-    # 为空则获取当前登录账号的收藏
-    if user_id is None:
-        try:
-            bot_owner_user_data = await PixivUser.query_global_data()
-            user_id = bot_owner_user_data.uid
-        except Exception as e:
-            logger.debug(f'PixivUserBookmark | 获取 Bot 所有者用户信息失败, 未配置或 cookies 失效, {e}')
-
-    user_id = str(user_id)
-    if not user_id.isdigit():
+    if user_id is not None and not str(user_id).isdigit():
         await interface.finish('用户UID应当为纯数字, 请确认后再重试吧')
-    uid = int(user_id)
 
     page_str = state.get('user_id_page_1')
     page_str = '1' if page_str is None else str(page_str)
@@ -199,9 +189,11 @@ async def handle_preview_user_bookmark(
     await interface.send_reply('稍等, 正在获取用户收藏~')
 
     try:
-        user_bookmark_data = await PixivUser(uid=uid).query_user_bookmarks(page=page)
+        # 为空则获取当前登录账号的收藏
+        pixiv_user = PixivUser(uid=str(user_id)) if user_id is not None else PixivUser.init_default_user()
+        user_bookmark_data = await pixiv_user.query_user_bookmarks(page=page)
 
-        title = f'Pixiv User Bookmark - {uid}'
+        title = f'Pixiv User Bookmark - {pixiv_user.uid}'
         preview_image = await PixivUserSubscriptionManager.generate_artworks_preview(
             title=title,
             pids=user_bookmark_data.illust_ids,
