@@ -8,11 +8,29 @@
 @Software       : PyCharm
 """
 
-from nonebot.log import logger
+from nonebot import get_driver, logger
 
 from src.service import scheduler
-from src.utils import run_async_with_time_limited
-from .helpers import bili_live_room_monitor_main
+from src.utils import run_async_with_time_limited, semaphore_gather
+from .subscription_source import BilibiliLiveRoomSubscriptionManager
+
+
+@get_driver().on_startup
+async def _init_all_live_room_subscription_source_status() -> None:
+    """启动时初始化所有订阅源中直播间的状态"""
+    logger.opt(colors=True).info('<lc>BilibiliLiveRoomMonitor</lc> | Initializing live room status')
+
+    try:
+        room_ids = await BilibiliLiveRoomSubscriptionManager.query_all_subscribed_sub_source_ids()
+        init_tasks = [
+            BilibiliLiveRoomSubscriptionManager(room_id).query_live_room_status()
+            for room_id in room_ids
+        ]
+        await semaphore_gather(tasks=init_tasks, semaphore_num=16, return_exceptions=False)
+        logger.opt(colors=True).success('<lc>BilibiliLiveRoomMonitor</lc> | Live room status initializing completed')
+    except Exception as e:
+        logger.error(f'BilibiliLiveRoomMonitor | Live room status initializing failed, {e!r}')
+        raise e
 
 
 @run_async_with_time_limited(delay_time=120)
@@ -21,11 +39,19 @@ async def bili_live_room_update_monitor() -> None:
     logger.debug('BilibiliLiveRoomSubscriptionMonitor | Started checking bilibili live room update')
 
     # 检查直播间更新并通知已订阅的用户或群组
-    try:
-        await bili_live_room_monitor_main()
-        logger.debug('BilibiliLiveRoomSubscriptionMonitor | Bilibili user live room update checking completed')
-    except Exception as e:
-        logger.error(f'BilibiliLiveRoomSubscriptionMonitor | Bilibili user live room update checking failed, {e!r}')
+    room_ids = await BilibiliLiveRoomSubscriptionManager.query_all_subscribed_sub_source_ids()
+    if not room_ids:
+        logger.debug('BilibiliLiveRoomSubscriptionMonitor | None of live room subscription, ignored')
+        return
+
+    # 处理直播间状态更新并向订阅者发送直播间更新信息
+    send_tasks = [
+        BilibiliLiveRoomSubscriptionManager(room_id).check_subscription_source_update_and_send_entity_message()
+        for room_id in room_ids
+    ]
+    await semaphore_gather(tasks=send_tasks, semaphore_num=16)
+
+    logger.debug('BilibiliLiveRoomSubscriptionMonitor | Bilibili user live room update checking completed')
 
 
 scheduler.add_job(

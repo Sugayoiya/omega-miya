@@ -8,22 +8,35 @@
 @Software       : PyCharm
 """
 
+from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from src.compat import AnyHttpUrlStr as AnyHttpUrl
 
 
 class BilibiliLiveRoomStatus(BaseModel):
     """Bilibili 直播间状态"""
     live_room_id: str
+    live_room_short_id: str
     live_status: int
     live_title: str
     live_user_name: str
+    live_user_id: str = Field(default='', exclude=True)
+    live_time: datetime | str = Field(default_factory=datetime.now, exclude=True)
+    live_description: str = Field(default='', exclude=True)
+    live_tags: str = Field(default='', exclude=True)
+    live_attention: int = Field(default=-1, exclude=True)
+    live_online: int = Field(default=-1, exclude=True)
+    live_url: AnyHttpUrl | str = Field(default='', exclude=True)
+    live_cover_url: AnyHttpUrl | str = Field(default='', exclude=True)
 
     def __eq__(self, other) -> bool:
         if isinstance(other, BilibiliLiveRoomStatus):
             return (
                 self.live_room_id == other.live_room_id
+                and self.live_room_short_id == other.live_room_short_id
                 and self.live_status == other.live_status
                 and self.live_title == other.live_title
             )
@@ -38,7 +51,11 @@ class BilibiliLiveRoomStatus(BaseModel):
             differ = set(self.model_dump().items()) - set(other.model_dump().items())
             differ_data = dict(differ)
             differ_data = None if not differ_data else differ_data
-            return BilibiliLiveRoomStatusUpdate.model_validate({'is_update': self != other, 'update': differ_data})
+            return BilibiliLiveRoomStatusUpdate.model_validate({
+                'is_update': self != other,
+                'status': self,
+                'update': differ_data,
+            })
         else:
             raise ValueError('BilibiliLiveRoomStatus can only be subtracted by the same class')
 
@@ -108,7 +125,8 @@ type LiveRoomStatusUpdateType = (
 class BilibiliLiveRoomStatusUpdate(BaseModel):
     """Bilibili 直播间状态更新"""
     is_update: bool
-    update: LiveRoomStatusUpdateType = None
+    status: BilibiliLiveRoomStatus = Field(exclude=True)
+    update: LiveRoomStatusUpdateType = Field(default=None)
 
     @model_validator(mode='after')
     @classmethod
@@ -122,6 +140,27 @@ class BilibiliLiveRoomStatusUpdate(BaseModel):
     @property
     def update_type(self) -> str:
         return self.update.__class__.__name__ if self.update is not None else 'BilibiliLiveRoomHoldingState'
+
+    @property
+    def need_notice(self) -> bool:
+        """直播间状态更新是否需要进行通知"""
+        if not self.update:
+            # 状态未更新
+            return False
+        elif isinstance(
+                self.update,
+                BilibiliLiveRoomStartLiving
+                | BilibiliLiveRoomStartLivingWithUpdateTitle
+                | BilibiliLiveRoomStopLiving
+                | BilibiliLiveRoomStopLivingWithPlaylist
+        ):
+            # 开播状态变化
+            return True
+        elif isinstance(self.update, BilibiliLiveRoomTitleChange) and self.status.live_status == 1:
+            # 直播中更换标题
+            return True
+        else:
+            return False
 
 
 __all__ = [

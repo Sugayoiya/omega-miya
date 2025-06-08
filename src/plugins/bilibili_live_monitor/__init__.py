@@ -10,6 +10,10 @@
 
 from nonebot.plugin import PluginMetadata
 
+from src.service import OmegaSubscriptionHandlerManager
+from . import monitor as monitor
+from .subscription_source import BilibiliLiveRoomSubscriptionManager
+
 __plugin_meta__ = PluginMetadata(
     name='B站直播间订阅',
     description='【B站直播间订阅插件】\n'
@@ -22,8 +26,17 @@ __plugin_meta__ = PluginMetadata(
     extra={'author': 'Ailitonia'},
 )
 
+_bilibili_dynamic_handler_manager = OmegaSubscriptionHandlerManager(
+    subscription_manager=BilibiliLiveRoomSubscriptionManager,
+    command_prefix='B站直播间',
+    aliases_command_prefix={
+        'b站直播间',
+        'Bilibili直播间',
+        'bilibili直播间',
+    },
+)
+_bilibili_dynamic = _bilibili_dynamic_handler_manager.register_handlers()
+"""注册B站直播间订阅流程 Handlers"""
 
-from . import command as command
-from . import monitor as monitor
 
 __all__ = []
