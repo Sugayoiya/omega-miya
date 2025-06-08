@@ -8,7 +8,8 @@
 @Software       : PyCharm
 """
 
-from typing import Annotated
+from collections.abc import Callable, Coroutine
+from typing import TYPE_CHECKING, Annotated, Any
 
 from nonebot.log import logger
 from nonebot.params import ArgStr, Depends
@@ -18,21 +19,28 @@ from nonebot.typing import T_State
 from src.params.handler import (
     get_command_str_multi_args_parser_handler,
     get_command_str_single_arg_parser_handler,
-    get_set_default_state_handler,
 )
-from src.params.permission import IS_ADMIN
 from src.service import OmegaMatcherInterface as OmMI
-from src.service import OmegaMessageSegment, enable_processor_state
+from src.service import OmegaMessageSegment, OmegaSubscriptionHandlerManager, enable_processor_state
 from src.utils.pixiv_api import PixivUser
-from .helpers import (
-    add_pixiv_user_sub,
-    delete_pixiv_user_sub,
-    generate_artworks_preview,
-    get_ranking_preview_factory,
-    handle_ranking_preview,
-    query_entity_subscribed_pixiv_user_sub_source,
+from .subscription_source import PixivUserSubscriptionManager
+
+if TYPE_CHECKING:
+    from src.resource import TemporaryResource
+
+_pixiv_artist_subscription_manager = OmegaSubscriptionHandlerManager(
+    subscription_manager=PixivUserSubscriptionManager,
+    command_prefix='pixiv用户',
+    aliases_command_prefix={
+        'Pixiv用户',
+        'pixiv用户作品',
+        'Pixiv用户作品',
+    },
 )
-from .monitor import scheduler
+
+_pixiv_artist_subscription = _pixiv_artist_subscription_manager.register_handlers()
+"""注册 Pixiv 用户作品订阅流程 Handlers"""
+
 
 pixiv_artist = CommandGroup(
     'pixiv-artist',
@@ -59,7 +67,7 @@ async def handle_daily_ranking(
     await handle_ranking_preview(
         interface=interface,
         page=page,
-        ranking_preview_factory=get_ranking_preview_factory(mode='daily')
+        ranking_preview_factory=PixivUserSubscriptionManager.get_ranking_preview_factory(mode='daily')
     )
 
 
@@ -75,7 +83,7 @@ async def handle_weekly_ranking(
     await handle_ranking_preview(
         interface=interface,
         page=page,
-        ranking_preview_factory=get_ranking_preview_factory(mode='weekly')
+        ranking_preview_factory=PixivUserSubscriptionManager.get_ranking_preview_factory(mode='weekly')
     )
 
 
@@ -91,7 +99,7 @@ async def handle_monthly_ranking(
     await handle_ranking_preview(
         interface=interface,
         page=page,
-        ranking_preview_factory=get_ranking_preview_factory(mode='monthly')
+        ranking_preview_factory=PixivUserSubscriptionManager.get_ranking_preview_factory(mode='monthly')
     )
 
 
@@ -147,7 +155,10 @@ async def handle_preview_user_artworks(
         p_end = 48 * page
 
         title = f'Pixiv User Artwork - {user_data.name}'
-        preview_image = await generate_artworks_preview(title=title, pids=user_data.manga_illusts[p_start:p_end])
+        preview_image = await PixivUserSubscriptionManager.generate_artworks_preview(
+            title=title,
+            pids=user_data.manga_illusts[p_start:p_end],
+        )
 
         await interface.send_reply(OmegaMessageSegment.image(preview_image.path))
     except Exception as e:
@@ -191,7 +202,10 @@ async def handle_preview_user_bookmark(
         user_bookmark_data = await PixivUser(uid=uid).query_user_bookmarks(page=page)
 
         title = f'Pixiv User Bookmark - {uid}'
-        preview_image = await generate_artworks_preview(title=title, pids=user_bookmark_data.illust_ids)
+        preview_image = await PixivUserSubscriptionManager.generate_artworks_preview(
+            title=title,
+            pids=user_bookmark_data.illust_ids,
+        )
 
         await interface.send_reply(OmegaMessageSegment.image(preview_image.path))
     except Exception as e:
@@ -199,137 +213,24 @@ async def handle_preview_user_bookmark(
         await interface.send_reply('获取用户收藏失败了QAQ, 请稍后再试')
 
 
-pixiv_artist_subscription = CommandGroup(
-    'pixiv-artist-subscription',
-    permission=IS_ADMIN,
-    priority=20,
-    block=True,
-    state=enable_processor_state(name='PixivArtistSubscriptionManager', level=30),
-)
-
-
-@pixiv_artist_subscription.command(
-    'add-subscription',
-    aliases={'pixiv用户订阅', 'Pixiv用户订阅'},
-    handlers=[
-        get_set_default_state_handler('ensure', value=None),
-        get_command_str_single_arg_parser_handler('user_id', ensure_key=True)
-    ]
-).got('ensure')
-async def handle_add_subscription(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
-        ensure: Annotated[str | None, ArgStr('ensure')],
-        user_id: Annotated[str | None, ArgStr('user_id')],
+async def handle_ranking_preview(
+        interface: 'OmMI',
+        page: str,
+        ranking_preview_factory: Callable[[int], Coroutine[Any, Any, 'TemporaryResource']]
 ) -> None:
-    # 检查是否收到确认消息后执行新增订阅
-    if ensure is None or user_id is None:
-        pass
-    elif ensure in ['是', '确认', 'Yes', 'yes', 'Y', 'y']:
-        await interface.send_reply('正在更新Pixiv用户订阅信息, 若首次订阅可能需要较长时间更新用户作品信息, 请稍候')
+    """生成并发送榜单预览图"""
+    page = page.strip()
+    if not page.isdigit():
+        await interface.finish_reply('榜单页码应当为纯数字, 请确认后再重试吧')
 
-        user = PixivUser(uid=int(user_id))
-        scheduler.pause()  # 暂停计划任务避免中途检查更新
-        try:
-            await add_pixiv_user_sub(interface=interface, pixiv_user=user)
-            await interface.entity.commit_session()
-            logger.success(f'PixivAddUserSubscription | {interface.entity}订阅用户(uid={user_id})成功')
-            msg = f'订阅Pixiv用户{user_id}成功'
-        except Exception as e:
-            logger.error(f'PixivAddUserSubscription | {interface.entity}订阅用户(uid={user_id})失败, {e!r}')
-            msg = f'订阅Pixiv用户{user_id}失败, 可能是网络异常或发生了意外的错误, 请稍后重试或联系管理员处理'
-        scheduler.resume()
-        await interface.finish_reply(msg)
-    else:
-        await interface.finish_reply('已取消操作')
-
-    # 未收到确认消息后则为首次触发命令执行获取用户信息
-    if user_id is None:
-        await interface.finish_reply('未提供用户UID参数, 已取消操作')
-    uid = user_id.strip()
-    if not uid.isdigit():
-        await interface.finish_reply('非有效的用户UID, 用户UID应当为纯数字, 已取消操作')
+    await interface.send_reply('稍等, 正在获取榜单作品~')
 
     try:
-        user = PixivUser(uid=int(user_id))
-        user_data = await user.query_user_data()
+        ranking_img = await ranking_preview_factory(int(page))
+        await interface.send_reply(OmegaMessageSegment.image(ranking_img.path))
     except Exception as e:
-        logger.error(f'PixivAddUserSubscription | 获取用户(uid={user_id})数据失败, {e}')
-        await interface.finish_reply('获取用户信息失败了QAQ, 可能是网络原因或没有这个用户, 请稍后再试')
-
-    ensure_msg = f'即将订阅Pixiv用户【{user_data.name}】的作品\n\n确认吗?\n【是/否】'
-    await interface.reject_arg_reply('ensure', ensure_msg)
-
-
-@pixiv_artist_subscription.command(
-    'del-subscription',
-    aliases={'取消pixiv用户订阅', '取消Pixiv用户订阅'},
-    handlers=[
-        get_set_default_state_handler('ensure', value=None),
-        get_command_str_single_arg_parser_handler('user_id', ensure_key=True)
-    ]
-).got('ensure')
-async def handle_del_subscription(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
-        ensure: Annotated[str | None, ArgStr('ensure')],
-        user_id: Annotated[str | None, ArgStr('user_id')]
-) -> None:
-    # 检查是否收到确认消息后执行删除订阅
-    if ensure is None or user_id is None:
-        pass
-    elif ensure in ['是', '确认', 'Yes', 'yes', 'Y', 'y']:
-        try:
-            await delete_pixiv_user_sub(interface=interface, uid=int(user_id))
-            await interface.entity.commit_session()
-            logger.success(f'PixivDeleteUserSubscription | {interface.entity}取消订阅用户(uid={user_id})成功')
-            msg = f'取消订阅Pixiv用户{user_id}成功!'
-        except Exception as e:
-            logger.error(f'PixivDeleteUserSubscription | {interface.entity}取消订阅用户(uid={user_id})失败, {e!r}')
-            msg = f'取消订阅Pixiv用户{user_id}失败, 请稍后再试或联系管理员处理'
-        await interface.finish_reply(msg)
-    else:
-        await interface.finish_reply('已取消操作')
-
-    # 未收到确认消息后则为首次触发命令执行获取用户信息
-    if user_id is None:
-        await interface.finish_reply('未提供用户UID参数, 已取消操作')
-    user_id = user_id.strip()
-    if not user_id.isdigit():
-        await interface.finish_reply('非有效的用户UID, 用户UID应当为纯数字, 已取消操作')
-
-    try:
-        exist_sub = await query_entity_subscribed_pixiv_user_sub_source(interface=interface)
-        if user_id in exist_sub.keys():
-            ensure_msg = f'取消订阅Pixiv用户【{exist_sub.get(user_id)}】的作品\n\n确认吗?\n【是/否】'
-            reject_key = 'ensure'
-        else:
-            exist_text = '\n'.join(f'{sub_id}: {user_nickname}' for sub_id, user_nickname in exist_sub.items())
-            ensure_msg = f'未订阅用户{user_id}, 请确认已订阅的用户动态列表:\n\n{exist_text if exist_text else "无"}'
-            reject_key = None
-    except Exception as e:
-        logger.error(f'PixivDeleteUserSubscription | 获取{interface}已订阅用户失败, {e!r}')
-        await interface.finish_reply('获取已订阅Pixiv用户列表失败, 请稍后再试或联系管理员处理')
-
-    await interface.send_reply(ensure_msg)
-    if reject_key is not None:
-        await interface.matcher.reject_arg(reject_key)
-    else:
-        await interface.matcher.finish()
-
-
-@pixiv_artist_subscription.command(
-    'list-subscription',
-    aliases={'pixiv用户订阅列表', 'Pixiv用户订阅列表'},
-    permission=None,
-    priority=10
-).handle()
-async def handle_list_subscription(interface: Annotated[OmMI, Depends(OmMI.depend())]) -> None:
-    try:
-        exist_sub = await query_entity_subscribed_pixiv_user_sub_source(interface=interface)
-        exist_text = '\n'.join(f'{sub_id}: {user_nickname}' for sub_id, user_nickname in exist_sub.items())
-        await interface.send_reply(f'当前已订阅的Pixiv用户列表:\n\n{exist_text if exist_text else "无"}')
-    except Exception as e:
-        logger.error(f'PixivListUserSubscription | 获取{interface.entity}已订阅的Pixiv用户列表, {e!r}')
-        await interface.send_reply('获取已订阅的Pixiv用户列表失败, 请稍后再试或联系管理员处理')
+        logger.error(f'PixivRanking | 获取榜单内容(page={ranking_preview_factory!r})失败, {e}')
+        await interface.send_reply('获取榜单内容失败了QAQ, 请稍后再试')
 
 
 __all__ = []
