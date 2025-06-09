@@ -233,12 +233,12 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
 
             try:
                 await switch_coro
+                await interface.entity.commit_session()
                 logger.success(f'{interface.entity} 设置{self._command_prefix}订阅通知@所有人功能为 {switch!r} 成功')
                 await interface.send_reply(f'已设置{self._command_prefix}订阅通知@所有人功能为【{switch.upper()}】')
             except Exception as e:
                 logger.error(f'{interface.entity} 设置{self._command_prefix}订阅通知@所有人功能为 {switch!r} 失败, {e}')
-                await interface.send_reply(
-                    f'设置{self._command_prefix}订阅通知@所有人功能失败, 请稍后重试或联系管理员处理')
+                await interface.send_reply(f'设置{self._command_prefix}订阅通知@所有人功能失败, 请联系管理员处理')
 
         return _switch_subscription_notice_at_all_handler
 
