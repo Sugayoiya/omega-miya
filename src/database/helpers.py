@@ -65,20 +65,15 @@ def _get_scoped_session_factory() -> async_scoped_session[AsyncSession]:
 async def begin_db_session() -> AsyncGenerator[AsyncSession, None]:
     """获取数据库 session 并开始事务"""
     scoped_session_factory = _get_scoped_session_factory()
+    session: AsyncSession = scoped_session_factory()
     try:
-        async with scoped_session_factory() as session:
-            async with session.begin():
-                try:
-                    yield session
-                except Exception:
-                    await session.rollback()
-                    raise
+        async with session.begin():
+            yield session
     except Exception:
-        await scoped_session_factory.rollback()
+        await session.rollback()
         raise
-    else:
-        await scoped_session_factory.commit()
     finally:
+        await session.close()
         await scoped_session_factory.remove()
 
 

@@ -12,7 +12,7 @@ from nonebot.log import logger
 
 from src.service import scheduler
 from src.utils import run_async_with_time_limited
-from .helpers import pixivision_monitor_main
+from .subscription_source import PixivisionSubscriptionManager
 
 
 @run_async_with_time_limited(delay_time=300)
@@ -21,7 +21,7 @@ async def pixivision_article_monitor() -> None:
 
     # 检查新特辑并发送消息
     try:
-        await pixivision_monitor_main()
+        await PixivisionSubscriptionManager().check_subscription_source_update_and_send_entity_message()
     except Exception as e:
         logger.error(f'PixivisionArticleMonitor | Processing pixivision article updating failed, {e!r}')
 

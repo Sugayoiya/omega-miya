@@ -11,6 +11,8 @@
 import abc
 from typing import TYPE_CHECKING, Any
 
+from nonebot.utils import run_sync
+
 from src.exception import WebSourceException
 from ..omega_requests import OmegaRequests
 
@@ -35,21 +37,14 @@ class BaseCommonAPI(abc.ABC):
         return self.__class__.__name__
 
     @classmethod
+    async def _async_get_root_url(cls, *args, **kwargs) -> str:
+        """内部方法, 异步获取 API 地址"""
+        return await run_sync(cls._get_root_url)(*args, **kwargs)
+
+    @classmethod
     @abc.abstractmethod
     def _get_root_url(cls, *args, **kwargs) -> str:
         """内部方法, 获取 API 地址"""
-        raise NotImplementedError
-
-    @classmethod
-    @abc.abstractmethod
-    async def _async_get_root_url(cls, *args, **kwargs) -> str:
-        """内部方法, 异步获取 API 地址"""
-        raise NotImplementedError
-
-    @classmethod
-    @abc.abstractmethod
-    def _load_cloudflare_clearance(cls) -> bool:
-        """内部方法, 判断是否需要请求加载 Cloudflare Clearance 配置"""
         raise NotImplementedError
 
     @classmethod
@@ -68,6 +63,11 @@ class BaseCommonAPI(abc.ABC):
     def _get_omega_requests_default_headers(cls) -> dict[str, str]:
         """获取 OmegaRequests 默认 Headers"""
         return OmegaRequests.get_default_headers()
+
+    @classmethod
+    def _load_cloudflare_clearance(cls) -> bool:
+        """内部方法, 判断是否需要请求加载 Cloudflare Clearance 配置"""
+        return False
 
     @classmethod
     def _init_omega_requests(

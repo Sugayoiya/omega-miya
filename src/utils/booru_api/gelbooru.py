@@ -33,14 +33,6 @@ class BaseGelbooruAPI(BaseCommonAPI, abc.ABC):
         return {'api_key': self.__api_key, 'user_id': self.__user_id}
 
     @classmethod
-    async def _async_get_root_url(cls, *args, **kwargs) -> str:
-        return cls._get_root_url(*args, **kwargs)
-
-    @classmethod
-    def _load_cloudflare_clearance(cls) -> bool:
-        return False
-
-    @classmethod
     def _get_default_headers(cls) -> 'HeaderTypes':
         return {}
 

@@ -90,10 +90,6 @@ class BaseOpenAIClient(BaseCommonAPI):
         raise NotImplementedError
 
     @classmethod
-    def _load_cloudflare_clearance(cls) -> bool:
-        return False
-
-    @classmethod
     def _get_default_headers(cls) -> dict[str, str]:
         return {'Content-Type': 'application/json'}
 

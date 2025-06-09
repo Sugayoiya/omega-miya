@@ -235,7 +235,7 @@ async def ai_guess(query_message: str, msg_images: Iterable[str]) -> str:
         attr_description=attr_desc,
     )
 
-    message = (
+    pre_message = (
             attr_desc
             or (images_desc.image_overview if images_desc else '')
             or (web_desc.web_overview if web_desc else '')
@@ -243,12 +243,10 @@ async def ai_guess(query_message: str, msg_images: Iterable[str]) -> str:
 
     if desc_result:
         desc_text = '\n\n'.join(f'{x.object}: {x.description}' for x in desc_result)
-    elif attr_desc:
-        desc_text = attr_desc
     else:
         desc_text = '没有识别到相关需要解释的实体或概念'
 
-    return f'{message.strip()}\n\n{desc_text.strip()}'.strip()
+    return f'{pre_message.strip()}\n\n{desc_text.strip()}'.strip()
 
 
 __all__ = [

@@ -25,14 +25,6 @@ class BasePixivAPI(BaseCommonAPI):
         return 'https://www.pixiv.net'
 
     @classmethod
-    async def _async_get_root_url(cls, *args, **kwargs) -> str:
-        return cls._get_root_url(*args, **kwargs)
-
-    @classmethod
-    def _load_cloudflare_clearance(cls) -> bool:
-        return False
-
-    @classmethod
     def _get_default_headers(cls) -> 'HeaderTypes':
         headers = cls._get_omega_requests_default_headers()
         headers.update({'referer': 'https://www.pixiv.net/'})
@@ -41,6 +33,13 @@ class BasePixivAPI(BaseCommonAPI):
     @classmethod
     def _get_default_cookies(cls) -> 'CookieTypes':
         return pixiv_config.cookie_phpssid
+
+    @classmethod
+    def _get_default_user_id(cls) -> str:
+        """获取由 cookies 定义的默认用户 ID"""
+        if pixiv_config.pixiv_phpsessid is None:
+            raise ValueError('未配置 Pixiv Cookie, 无默认用户 ID')
+        return pixiv_config.pixiv_phpsessid.split('_')[0]
 
     @classmethod
     async def get_resource_as_bytes(cls, url: str, *, params: 'QueryTypes' = None, timeout: int = 30) -> bytes:

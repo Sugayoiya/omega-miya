@@ -13,9 +13,8 @@ import re
 from lxml import etree
 from nonebot.utils import run_sync
 
-from src.compat import parse_json_as
 from .model.pixivision import PixivisionArticle, PixivisionIllustrationList
-from .model.user import PixivGlobalData, PixivUserSearchingModel
+from .model.user import PixivUserSearchingModel
 
 
 class PixivParser:
@@ -154,20 +153,6 @@ class PixivParser:
             'users': user_list
         }
         return PixivUserSearchingModel.model_validate(result)
-
-    @staticmethod
-    @run_sync
-    def parse_global_data(content: str) -> PixivGlobalData:
-        """解析 pixiv 主页全局信息
-
-        :param content: 网页 html
-        """
-        html = etree.HTML(content)
-
-        global_data = html.xpath(
-            '/html/head/meta[@name="global-data" and @id="meta-global-data"]'
-        ).pop(0).attrib.get('content')
-        return parse_json_as(PixivGlobalData, global_data)
 
     @staticmethod
     @run_sync

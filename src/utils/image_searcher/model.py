@@ -78,10 +78,6 @@ class BaseImageSearcherAPI(BaseImageSearcher, BaseCommonAPI, abc.ABC):
     """识图引擎 API 基类"""
 
     @classmethod
-    def _load_cloudflare_clearance(cls) -> bool:
-        return False
-
-    @classmethod
     def get_searcher_name(cls) -> str:
         """获取识图引擎名称"""
         return cls.__name__.lower()

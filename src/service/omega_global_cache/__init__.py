@@ -14,13 +14,21 @@ from sqlalchemy.exc import NoResultFound
 
 from src.database import GlobalCacheDAL, begin_db_session
 
+_REGISTERED_CACHE: set[str] = set()
+"""缓存全局已注册的缓存项"""
+
 
 class OmegaGlobalCache:
     """Omega 全局缓存"""
 
     def __init__(self, cache_name: str, *, ttl: int = 86400):
-        self._cache_name = cache_name
+        self._cache_name = cache_name.strip()
         self._ttl = ttl
+
+        # 检查 cache_name 是否已被注册
+        if self._cache_name in _REGISTERED_CACHE:
+            raise ValueError(f'OmegaGlobalCache {self._cache_name!r} already registered')
+        _REGISTERED_CACHE.add(self._cache_name)
 
         # 内存级缓存, 对象存续期间永不失效
         self._cache: dict[str, str] = {}

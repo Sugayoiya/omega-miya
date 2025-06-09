@@ -60,14 +60,6 @@ class ShindanMaker(BaseCommonAPI):
                 return 'https://shindanmaker.com'
 
     @classmethod
-    async def _async_get_root_url(cls, *args, **kwargs) -> str:
-        return cls._get_root_url(*args, **kwargs)
-
-    @classmethod
-    def _load_cloudflare_clearance(cls) -> bool:
-        return False
-
-    @classmethod
     def _get_default_headers(cls) -> dict[str, str]:
         return {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:75.0) Gecko/20100101 Firefox/75.0'}
 
