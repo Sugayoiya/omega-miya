@@ -12,7 +12,6 @@ import abc
 import sys
 from collections.abc import Callable, Generator
 from contextlib import asynccontextmanager, contextmanager
-from copy import deepcopy
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
@@ -108,7 +107,7 @@ class BaseResource(abc.ABC):
         raise NotImplementedError
 
     def __call__(self, *args: str) -> Self:
-        new_obj = deepcopy(self)
+        new_obj = self.__class__()
         new_obj.path = self.path.joinpath(*args)
         return new_obj
 
@@ -138,13 +137,28 @@ class BaseResource(abc.ABC):
 
     @property
     def name(self) -> str:
-        """路径目标文件/文件夹名称"""
+        """一个表示最后路径组件的字符串, 排除了驱动器与根目录, 如果存在的话"""
         return self.path.name
 
     @property
     def suffix(self) -> str:
-        """路径目标文件/文件夹后缀"""
+        """路径目标最终组件的文件扩展名(如果有)
+
+        'my/library/setup.py' -> '.py'
+        'my/library.tar.gz' -> .gz'
+        'my/library' -> ''
+        """
         return self.path.suffix
+
+    @property
+    def stem(self) -> str:
+        """最后一个路径组件, 除去后缀
+
+        'my/library.tar.gz' -> 'library.tar'
+        'my/library.tar' -> 'library'
+        'my/library' -> 'library'
+        """
+        return self.path.stem
 
     @property
     def is_exist(self) -> bool:
