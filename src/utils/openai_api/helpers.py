@@ -39,7 +39,7 @@ async def encode_local_audio(audio: 'BaseResource') -> tuple[str, str]:
     """将本地音频文件编码成 base64 格式的 input_audio, 返回 (data, format) 的数组"""
     async with audio.async_open('rb') as af:
         content = await af.read()
-    return await _base64_encode(content), audio.path.suffix.removeprefix('.')
+    return await _base64_encode(content), audio.suffix.removeprefix('.')
 
 
 async def encode_local_file(file: 'BaseResource') -> str:
@@ -58,7 +58,7 @@ async def encode_local_image(image: 'BaseResource', *, convert_format: str | Non
         content = await _convert_image_format(content, format_=convert_format)
         format_suffix = convert_format
     else:
-        format_suffix = image.path.suffix.removeprefix('.')
+        format_suffix = image.suffix.removeprefix('.')
 
     return f'data:image/{format_suffix};base64,{await _base64_encode(content)}'
 

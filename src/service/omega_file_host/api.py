@@ -40,7 +40,7 @@ if file_host_config.omega_file_host_enable_hosting_service:
 
         return FileResponse(
             path=file.path,
-            filename=f'{file_id}{file.path.suffix}',
+            filename=f'{file_id}{file.suffix}',
             media_type='application/octet-stream',
         )
 

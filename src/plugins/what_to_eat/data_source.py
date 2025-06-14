@@ -60,9 +60,9 @@ async def _init_menu() -> None:
     async with _RESOURCE_PATH('index.json').async_open('r', encoding='utf8') as af:
         index = parse_json_as(list[MenuFood], await af.read())
         menu_data.extend(index)
-    for file in _RESOURCE_PATH.path.iterdir():
+    for file in _RESOURCE_PATH.iter_current_files():
         if re.search(re.compile(r'^index_addition_.+.json$'), file.name):
-            async with _RESOURCE_PATH(file.name).async_open('r', encoding='utf8') as af:
+            async with file.async_open('r', encoding='utf8') as af:
                 index = parse_json_as(list[MenuFood], await af.read())
                 menu_data.extend(index)
 
