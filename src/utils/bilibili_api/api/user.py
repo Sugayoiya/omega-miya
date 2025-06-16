@@ -11,6 +11,7 @@
 from urllib.parse import unquote
 
 from lxml import etree
+from nonebot.log import logger
 from nonebot.utils import run_sync
 
 from src.compat import parse_json_as
@@ -60,9 +61,14 @@ class BilibiliUser(BilibiliCommon):
     async def query_user_info(cls, mid: int | str) -> User:
         """获取用户基本信息"""
         url = 'https://api.bilibili.com/x/space/wbi/acc/info'
-        render_data = await cls._query_user_space_w_webid(mid=mid)
-        params = await cls.sign_wbi_params(params={'mid': str(mid), 'w_webid': render_data.access_id})
-        data = await cls._get_json(url=url, params=params)
+        params = {'mid': str(mid)}
+        try:
+            render_data = await cls._query_user_space_w_webid(mid=mid)
+            params.update({'w_webid': render_data.access_id})
+        except Exception as e:
+            logger.opt(colors=True).error(f'<lc>Bilibili</lc> | 获取用户 {mid} RENDER_DATA 失败, {e}')
+        signed_params = await cls.sign_wbi_params(params=params)
+        data = await cls._get_json(url=url, params=signed_params)
         return User.model_validate(data)
 
     @classmethod
