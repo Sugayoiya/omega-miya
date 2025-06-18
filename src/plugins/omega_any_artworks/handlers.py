@@ -53,12 +53,12 @@ class ArtworkHandlerManager[T: 'ImageOpsMixin']:
             return False
 
         return (
-                await interface.entity.check_global_permission() and
-                await interface.entity.check_auth_setting(
-                    module=interface.matcher.plugin.module_name,
-                    plugin=interface.matcher.plugin.name,
-                    node=ALLOW_R18_NODE
-                )
+            await interface.entity.check_global_permission()
+            and await interface.entity.check_auth_setting(
+                module=interface.matcher.plugin.module_name,
+                plugin=interface.matcher.plugin.name,
+                node=ALLOW_R18_NODE
+            )
         )
 
     @classmethod
@@ -111,8 +111,14 @@ class ArtworkHandlerManager[T: 'ImageOpsMixin']:
         ]
         proceed_pages = await semaphore_gather(tasks=tasks, semaphore_num=10, return_exceptions=False)
 
+        pages_url_tasks = [
+            x.get_hosting_path()
+            for x in proceed_pages
+        ]
+        pages_hosting_urls = await semaphore_gather(tasks=pages_url_tasks, semaphore_num=10, return_exceptions=False)
+
         # 拼接待发送消息
-        send_msg = OmegaMessage(OmegaMessageSegment.image(url=x.path) for x in proceed_pages)
+        send_msg = OmegaMessage(OmegaMessageSegment.image(url) for url in pages_hosting_urls)
         send_msg = send_msg + f'\n{artwork_desc}'
 
         if need_revoke:
@@ -138,7 +144,7 @@ class ArtworkHandlerManager[T: 'ImageOpsMixin']:
             preview_size=(360, 360),
             num_of_line=6,
         )
-        send_msg = OmegaMessageSegment.image(preview_image.path)
+        send_msg = OmegaMessageSegment.image(await preview_image.get_hosting_path())
 
         if need_revoke:
             await interface.send_reply_auto_revoke(send_msg, 60)

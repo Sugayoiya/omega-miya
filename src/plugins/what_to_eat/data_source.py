@@ -93,9 +93,9 @@ async def _get_food_msg(food: MenuFood) -> OmegaMessage:
     if food_img_url.startswith(('http://', 'https://')):
         filename = OmegaRequests.hash_url_file_name(food.name, url=food_img_url)
         file = await OmegaRequests().download(url=food_img_url, file=_TMP_PATH(filename), ignore_exist_file=True)
-        img_seg = OmegaMessageSegment.image(file.path)
+        img_seg = OmegaMessageSegment.image(await file.get_hosting_path())
     else:
-        img_seg = OmegaMessageSegment.image(_RESOURCE_PATH(food_img_url).path)
+        img_seg = OmegaMessageSegment.image(await _RESOURCE_PATH(food_img_url).get_hosting_path())
 
     return OmegaMessageSegment.text(f'【{food.name}】\n') + img_seg
 

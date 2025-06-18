@@ -134,8 +134,14 @@ class PixivUserSubscriptionManager(BaseSubscriptionManager['SMC_T']):
         ]
         proceed_pages = await semaphore_gather(tasks=tasks, semaphore_num=10, return_exceptions=False)
 
+        pages_url_tasks = [
+            x.get_hosting_path()
+            for x in proceed_pages
+        ]
+        pages_hosting_urls = await semaphore_gather(tasks=pages_url_tasks, semaphore_num=10, return_exceptions=False)
+
         # 拼接待发送消息
-        send_msg = OmegaMessage(OmegaMessageSegment.image(url=x.path) for x in proceed_pages)
+        send_msg = OmegaMessage(OmegaMessageSegment.image(url) for url in pages_hosting_urls)
         if message_prefix is not None:
             send_msg = message_prefix + send_msg + f'\n{artwork_desc}'
         else:

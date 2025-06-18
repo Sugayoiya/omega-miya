@@ -160,7 +160,7 @@ async def handle_preview_user_artworks(
             pids=user_data.manga_illusts[p_start:p_end],
         )
 
-        await interface.send_reply(OmegaMessageSegment.image(preview_image.path))
+        await interface.send_reply(OmegaMessageSegment.image(await preview_image.get_hosting_path()))
     except Exception as e:
         logger.error(f'PixivUserArtworks | 获取用户(uid={user_id})作品失败, {e}')
         await interface.send_reply('获取用户作品失败了QAQ, 请稍后再试')
@@ -199,7 +199,7 @@ async def handle_preview_user_bookmark(
             pids=user_bookmark_data.illust_ids,
         )
 
-        await interface.send_reply(OmegaMessageSegment.image(preview_image.path))
+        await interface.send_reply(OmegaMessageSegment.image(await preview_image.get_hosting_path()))
     except Exception as e:
         logger.error(f'PixivUserBookmark | 获取用户(uid={user_id})收藏失败, {e}')
         await interface.send_reply('获取用户收藏失败了QAQ, 请稍后再试')
@@ -219,7 +219,7 @@ async def handle_ranking_preview(
 
     try:
         ranking_img = await ranking_preview_factory(int(page))
-        await interface.send_reply(OmegaMessageSegment.image(ranking_img.path))
+        await interface.send_reply(OmegaMessageSegment.image(await ranking_img.get_hosting_path()))
     except Exception as e:
         logger.error(f'PixivRanking | 获取榜单内容(page={ranking_preview_factory!r})失败, {e}')
         await interface.send_reply('获取榜单内容失败了QAQ, 请稍后再试')
