@@ -50,9 +50,9 @@ if file_host_config.omega_file_host_enable_hosting_service:
 class OmegaFileHostProtocol(BaseResourceHostProtocol[BaseResource]):
     """Omega 文件托管服务实现"""
 
-    async def get_hosting_file_path(self) -> str:
+    async def get_hosting_file_path(self, *, ttl_delta: int = 0) -> str:
         if file_host_config.omega_file_host_enable_hosting_service:
-            file_uuid = await query_file_uuid(self._resource)
+            file_uuid = await query_file_uuid(self._resource, ttl_delta=ttl_delta)
             return f'{_FILE_HOST_API.root_url}/download/{file_uuid}'
         else:
             return self._resource.resolve_path
