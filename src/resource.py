@@ -91,7 +91,7 @@ class BaseResourceHostProtocol[RT: 'BaseResource'](abc.ABC):
         self._resource = resource
 
     @abc.abstractmethod
-    async def get_hosting_file_path(self) -> str:
+    async def get_hosting_file_path(self, *, ttl_delta: int = 0) -> str:
         """获取文件托管路径, 返回文件 URL"""
         raise NotImplementedError
 
@@ -334,12 +334,12 @@ class BaseResource(abc.ABC):
         return self.path.unlink(missing_ok=missing_ok)
 
     @check_file
-    async def get_hosting_path(self) -> str:
+    async def get_hosting_path(self, *, ttl_delta: int = 0) -> str:
         """获取文件托管路径, 已注册文件托管服务时返回文件 URL, 未启用时返回文件本地路径"""
         if self._host_protocol is None:
             return self.resolve_path
         else:
-            return await self._host_protocol(self).get_hosting_file_path()
+            return await self._host_protocol(self).get_hosting_file_path(ttl_delta=ttl_delta)
 
 
 class AnyResource(BaseResource):
