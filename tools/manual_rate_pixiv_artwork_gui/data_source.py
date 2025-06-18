@@ -348,14 +348,14 @@ class LocalPixivArtworkSource(BasePixivArtworkSource):
             'pid': current_file.name.split('_')[0],
             'source_path': current_file.resolve_path,
         })
-        self._working_path = AnyResource(current_file.path.parent).resolve_path
+        self._working_path = current_file.parent.resolve_path
 
     async def _init_working_path(self) -> None:
         working_dir = AnyResource(self._working_path)
 
         # 文件列表缓存
         working_dir_all_files_cache = self._output_path.cache_dir(
-            f'{working_dir.path.parent.name}-{working_dir.name}.txt'
+            f'{working_dir.parent.name}-{working_dir.name}.txt'
         )
 
         # 加载文件列表缓存

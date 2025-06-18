@@ -8,7 +8,6 @@
 @Software       : PyCharm
 """
 
-import pathlib
 import zipfile
 from collections.abc import Sequence
 
@@ -57,9 +56,7 @@ class ZipUtils:
         if self.file.suffix != '.zip':
             raise ValueError('File suffix must be ".zip"')
 
-        if not self.file.path.parent.exists():
-            pathlib.Path.mkdir(self.file.path.parent, parents=True)
-
+        self.file.ensure_parent_path()
         with zipfile.ZipFile(self.file.resolve_path, mode='w', compression=compression) as zipf:
             for file in files:
                 if file.resolve_path == self.file.resolve_path:
@@ -102,9 +99,7 @@ class ZipUtils:
         if self.file.suffix != '.7z':
             raise ValueError('File suffix must be ".7z"')
 
-        if not self.file.path.parent.exists():
-            pathlib.Path.mkdir(self.file.path.parent, parents=True)
-
+        self.file.ensure_parent_path()
         with py7zr.SevenZipFile(self.file.resolve_path, mode='w', password=password) as zf:
             if password:
                 zf.set_encrypted_header(True)
