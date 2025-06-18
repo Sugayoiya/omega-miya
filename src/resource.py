@@ -72,7 +72,8 @@ _LOG_FOLDER: Path = __ROOT_PATH.joinpath('log')
 _STATIC_RESOURCE_FOLDER: Path = __ROOT_PATH.joinpath('static')
 """静态资源文件路径"""
 _TEMPORARY_RESOURCE_FOLDER: Path = __ROOT_PATH.joinpath('.tmp')
-"""临时文件文件路径"""
+"""运行时产生的的可随时清理的缓存/临时文件路径"""
+
 
 # 初始化日志文件路径文件夹
 if not _LOG_FOLDER.exists():
@@ -91,7 +92,7 @@ class BaseResourceHostProtocol[RT: 'BaseResource'](abc.ABC):
 
     @abc.abstractmethod
     async def get_hosting_file_path(self) -> str:
-        """获取文件托管路径, 已注册文件托管服务时返回文件 URL, 未启用时返回文件本地路径"""
+        """获取文件托管路径, 返回文件 URL"""
         raise NotImplementedError
 
 
@@ -219,20 +220,26 @@ class BaseResource(abc.ABC):
 
         return _wrapper
 
-    async def get_hosting_path(self) -> str:
-        """获取文件托管路径, 已注册文件托管服务时返回文件 URL, 未启用时返回文件本地路径"""
-        if self._host_protocol is None:
-            return self.resolve_path
-        else:
-            return await self._host_protocol(self).get_hosting_file_path()
+    def ensure_parent_path(self, *, exist_ok: bool = False) -> None:
+        """检查父路径并确保其存在"""
+        if not self.path.parent.exists():
+            Path.mkdir(self.path.parent, parents=True, exist_ok=exist_ok)
+
+    @property
+    def parent(self) -> Self:
+        """返回逻辑父路径"""
+        self.ensure_parent_path()
+        return self.init_from_path(path=self.path.parent)
 
     @property
     def resolve_path(self) -> str:
+        """将路径绝对化，解析任何符号链接"""
         return self.path.resolve().as_posix()
 
     @property
     @check_file
     def file_uri(self) -> str:
+        """将路径表示为 file URI"""
         return self.path.resolve().as_uri()
 
     @overload
@@ -326,6 +333,14 @@ class BaseResource(abc.ABC):
         """移除此文件或符号链接"""
         return self.path.unlink(missing_ok=missing_ok)
 
+    @check_file
+    async def get_hosting_path(self) -> str:
+        """获取文件托管路径, 已注册文件托管服务时返回文件 URL, 未启用时返回文件本地路径"""
+        if self._host_protocol is None:
+            return self.resolve_path
+        else:
+            return await self._host_protocol(self).get_hosting_file_path()
+
 
 class AnyResource(BaseResource):
     """任意位置资源文件"""
@@ -366,7 +381,7 @@ class StaticResource(BaseResource):
 
 
 class TemporaryResource(BaseResource):
-    """临时资源文件"""
+    """运行时产生的的可随时清理的缓存/临时文件"""
 
     def __init__(self, *args: str):
         self.path = _TEMPORARY_RESOURCE_FOLDER.joinpath(*args)
