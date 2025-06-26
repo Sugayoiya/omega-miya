@@ -75,7 +75,7 @@ class UserData(BaseBilibiliModel):
     # coins: int
     # official: UserOfficial
     is_followed: bool
-    top_photo: AnyHttpUrl
+    top_photo: str
     live_room: UserLiveRoom | None = Field(None)
     birthday: str
 
