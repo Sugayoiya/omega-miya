@@ -108,7 +108,7 @@ class BaseResource(abc.ABC):
         raise NotImplementedError
 
     def __call__(self, *args: str) -> Self:
-        new_obj = self.__class__()
+        new_obj = self.__class__(str(self.path))
         new_obj.path = self.path.joinpath(*args)
         return new_obj
 
