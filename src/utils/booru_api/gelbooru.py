@@ -40,7 +40,7 @@ class BaseGelbooruAPI(BaseCommonAPI, abc.ABC):
     def _get_default_cookies(cls) -> 'CookieTypes':
         return None
 
-    async def get_json(
+    async def get_resource_as_json(
             self,
             url: str,
             params: dict[str, Any] | None = None,
@@ -51,7 +51,7 @@ class BaseGelbooruAPI(BaseCommonAPI, abc.ABC):
         else:
             params = self._auth_params
 
-        return await self._get_json(url, params)
+        return await self._get_resource_as_json(url, params)
 
     async def get_resource_as_bytes(
             self,
@@ -97,7 +97,7 @@ class BaseGelbooruAPI(BaseCommonAPI, abc.ABC):
         if id_ is not None:
             params.update({'id': str(id_)})
 
-        return PostsData.model_validate(await self.get_json(url=index_url, params=params))
+        return PostsData.model_validate(await self.get_resource_as_json(url=index_url, params=params))
 
     async def post_show(self, id_: int) -> Post:
         posts = await self.posts_index(id_=id_)
@@ -138,7 +138,7 @@ class BaseGelbooruAPI(BaseCommonAPI, abc.ABC):
         if orderby is not None:
             params.update({'orderby': orderby})
 
-        return TagsData.model_validate(await self.get_json(url=index_url, params=params))
+        return TagsData.model_validate(await self.get_resource_as_json(url=index_url, params=params))
 
     """Users API"""
 
@@ -161,7 +161,7 @@ class BaseGelbooruAPI(BaseCommonAPI, abc.ABC):
         if name_pattern is not None:
             params.update({'name_pattern': name_pattern})
 
-        return UsersData.model_validate(await self.get_json(url=index_url, params=params))
+        return UsersData.model_validate(await self.get_resource_as_json(url=index_url, params=params))
 
     """Comments API"""
 
@@ -175,7 +175,7 @@ class BaseGelbooruAPI(BaseCommonAPI, abc.ABC):
         if post_id is not None:
             params.update({'post_id': str(post_id)})
 
-        return CommentsData.model_validate(await self.get_json(url=index_url, params=params))
+        return CommentsData.model_validate(await self.get_resource_as_json(url=index_url, params=params))
 
 
 class GelbooruAPI(BaseGelbooruAPI):

@@ -61,7 +61,7 @@ class PixivCommon(BasePixivAPI):
         if content is not None:
             params.update({'content': content})
 
-        ranking_data = await cls._get_json(url=url, params=params)
+        ranking_data = await cls._get_resource_as_json(url=url, params=params)
         return PixivRankingModel.model_validate(ranking_data)
 
     @classmethod
@@ -125,7 +125,7 @@ class PixivCommon(BasePixivAPI):
             params.update({'bgt': str(bgt_)})
 
         searching_url = f'{cls._get_root_url()}/ajax/search/{mode}/{word}'
-        searching_data = await cls._get_json(url=searching_url, params=params)
+        searching_data = await cls._get_resource_as_json(url=searching_url, params=params)
         return PixivSearchingResultModel.model_validate(searching_data)
 
     @classmethod
@@ -153,7 +153,7 @@ class PixivCommon(BasePixivAPI):
         url = f'{cls._get_root_url()}/ajax/discovery/artworks'  # Pixiv 发现
         params = {'mode': mode, 'limit': limit, 'lang': lang}
 
-        discovery_data = await cls._get_json(url=url, params=params)
+        discovery_data = await cls._get_resource_as_json(url=url, params=params)
         return PixivDiscoveryModel.model_validate(discovery_data)
 
     @classmethod
@@ -167,7 +167,7 @@ class PixivCommon(BasePixivAPI):
         url = f'{cls._get_root_url()}/ajax/top/illust'
         params = {'mode': mode, 'lang': lang}
 
-        recommend_data = await cls._get_json(url=url, params=params)
+        recommend_data = await cls._get_resource_as_json(url=url, params=params)
         return PixivTopModel.model_validate(recommend_data)
 
     @classmethod
@@ -182,7 +182,7 @@ class PixivCommon(BasePixivAPI):
         url = f'{cls._get_root_url()}/ajax/follow_latest/illust'
         params = {'mode': mode, 'lang': lang, 'p': page}
 
-        following_data = await cls._get_json(url=url, params=params)
+        following_data = await cls._get_resource_as_json(url=url, params=params)
         return PixivFollowLatestIllust.model_validate(following_data)
 
     @classmethod
@@ -204,7 +204,7 @@ class PixivCommon(BasePixivAPI):
         if version is not None:
             params.update({'version': version})
 
-        bookmark_data = await cls._get_json(url=url, params=params)
+        bookmark_data = await cls._get_resource_as_json(url=url, params=params)
         return PixivBookmark.model_validate(bookmark_data)
 
 
@@ -227,17 +227,17 @@ class PixivArtwork(PixivCommon):
 
     async def _query_data(self) -> PixivArtworkDataModel:
         """获取作品信息"""
-        artwork_data = await self._get_json(url=self.data_url)
+        artwork_data = await self._get_resource_as_json(url=self.data_url)
         return PixivArtworkDataModel.model_validate(artwork_data)
 
     async def _query_page_date(self) -> PixivArtworkPageModel:
         """获取多页信息"""
-        page_data = await self._get_json(url=self.page_data_url)
+        page_data = await self._get_resource_as_json(url=self.page_data_url)
         return PixivArtworkPageModel.model_validate(page_data)
 
     async def _query_ugoira_meta(self) -> PixivArtworkUgoiraMeta:
         """获取动图信息"""
-        ugoira_meta = await self._get_json(url=self.ugoira_meta_url)
+        ugoira_meta = await self._get_resource_as_json(url=self.ugoira_meta_url)
         return PixivArtworkUgoiraMeta.model_validate(ugoira_meta)
 
     async def query_artwork(self) -> PixivArtworkCompleteDataModel:
@@ -343,7 +343,7 @@ class PixivArtwork(PixivCommon):
         :param lang: 语言
         """
         params = {'limit': init_limit, 'lang': lang}
-        recommend_data = await self._get_json(url=self.recommend_url, params=params)
+        recommend_data = await self._get_resource_as_json(url=self.recommend_url, params=params)
 
         # 清理返回数据中的 isAdContainer 字段
         illusts = [illust for illust in recommend_data.get('body', {}).get('illusts', [])
@@ -392,14 +392,14 @@ class PixivUser(PixivCommon):
         """获取用户基本信息"""
         params = {'lang': 'zh'}
 
-        user_data = await self._get_json(url=self.data_url, params=params)
+        user_data = await self._get_resource_as_json(url=self.data_url, params=params)
         return PixivUserDataModel.model_validate(user_data)
 
     async def _query_user_artwork_data(self) -> PixivUserArtworkDataModel:
         """获取用户作品信息"""
         params = {'lang': 'zh'}
 
-        user_artwork_data = await self._get_json(url=self.profile_url, params=params)
+        user_artwork_data = await self._get_resource_as_json(url=self.profile_url, params=params)
         return PixivUserArtworkDataModel.model_validate(user_artwork_data)
 
     async def query_user_data(self) -> PixivUserModel:
@@ -454,7 +454,7 @@ class PixivUser(PixivCommon):
         if tag is not None:
             params.update({'tag': tag})
 
-        following_user_data = await self._get_json(url=self.follow_user_url, params=params)
+        following_user_data = await self._get_resource_as_json(url=self.follow_user_url, params=params)
         return PixivFollowUser.model_validate(following_user_data)
 
 

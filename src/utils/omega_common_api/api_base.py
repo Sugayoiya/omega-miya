@@ -201,7 +201,7 @@ class BaseCommonAPI(abc.ABC):
         return response
 
     @classmethod
-    async def _get_json(
+    async def _get_resource_as_json(
             cls,
             url: str,
             params: 'QueryTypes' = None,
@@ -215,29 +215,6 @@ class BaseCommonAPI(abc.ABC):
         """内部方法, 使用 GET 方法请求 API, 返回 json 内容"""
         response = await cls._request_get(
             url=url, params=params,
-            headers=headers, cookies=cookies, timeout=timeout, no_headers=no_headers, no_cookies=no_cookies
-        )
-        return cls._parse_content_as_json(response)
-
-    @classmethod
-    async def _post_json(
-            cls,
-            url: str,
-            params: 'QueryTypes' = None,
-            *,
-            content: 'ContentTypes' = None,
-            data: 'DataTypes' = None,
-            json: Any = None,
-            files: 'FilesTypes' = None,
-            headers: 'HeaderTypes' = None,
-            cookies: 'CookieTypes' = None,
-            timeout: int = 10,
-            no_headers: bool = False,
-            no_cookies: bool = False,
-    ) -> Any:
-        """内部方法, 使用 POST 方法请求 API, 返回 json 内容"""
-        response = await cls._request_post(
-            url=url, params=params, content=content, data=data, json=json, files=files,
             headers=headers, cookies=cookies, timeout=timeout, no_headers=no_headers, no_cookies=no_cookies
         )
         return cls._parse_content_as_json(response)
@@ -279,6 +256,29 @@ class BaseCommonAPI(abc.ABC):
             headers=headers, cookies=cookies, timeout=timeout, no_headers=no_headers, no_cookies=no_cookies
         )
         return cls._parse_content_as_text(response=response)
+
+    @classmethod
+    async def _post_acquire_as_json(
+            cls,
+            url: str,
+            params: 'QueryTypes' = None,
+            *,
+            content: 'ContentTypes' = None,
+            data: 'DataTypes' = None,
+            json: Any = None,
+            files: 'FilesTypes' = None,
+            headers: 'HeaderTypes' = None,
+            cookies: 'CookieTypes' = None,
+            timeout: int = 10,
+            no_headers: bool = False,
+            no_cookies: bool = False,
+    ) -> Any:
+        """内部方法, 使用 POST 方法请求 API, 返回 json 内容"""
+        response = await cls._request_post(
+            url=url, params=params, content=content, data=data, json=json, files=files,
+            headers=headers, cookies=cookies, timeout=timeout, no_headers=no_headers, no_cookies=no_cookies
+        )
+        return cls._parse_content_as_json(response)
 
     @classmethod
     async def _download_resource(

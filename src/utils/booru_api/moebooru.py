@@ -76,7 +76,7 @@ class BaseMoebooruAPI(BaseCommonAPI, abc.ABC):
     def _get_default_cookies(cls) -> 'CookieTypes':
         return None
 
-    async def get_json(
+    async def get_resource_as_json(
             self,
             url: str,
             params: dict[str, Any] | None = None,
@@ -87,7 +87,7 @@ class BaseMoebooruAPI(BaseCommonAPI, abc.ABC):
         else:
             params = self._auth_params
 
-        return await self._get_json(url, params)
+        return await self._get_resource_as_json(url, params)
 
     async def get_resource_as_bytes(
             self,
@@ -130,23 +130,23 @@ class BaseMoebooruAPI(BaseCommonAPI, abc.ABC):
             params.update({'tags': tags})
         params = None if not params else params
 
-        return parse_obj_as(list[Post], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[Post], await self.get_resource_as_json(url=index_url, params=params))
 
     async def posts_show_popular_by_day(self) -> list[Post]:
         index_url = f'{self._get_root_url()}/post/popular_by_day.json'
-        return parse_obj_as(list[Post], await self.get_json(url=index_url))
+        return parse_obj_as(list[Post], await self.get_resource_as_json(url=index_url))
 
     async def posts_show_popular_by_month(self) -> list[Post]:
         index_url = f'{self._get_root_url()}/post/popular_by_month.json'
-        return parse_obj_as(list[Post], await self.get_json(url=index_url))
+        return parse_obj_as(list[Post], await self.get_resource_as_json(url=index_url))
 
     async def posts_show_popular_by_week(self) -> list[Post]:
         index_url = f'{self._get_root_url()}/post/popular_by_week.json'
-        return parse_obj_as(list[Post], await self.get_json(url=index_url))
+        return parse_obj_as(list[Post], await self.get_resource_as_json(url=index_url))
 
     async def posts_show_popular_recent(self) -> list[Post]:
         index_url = f'{self._get_root_url()}/post/popular_recent.json'
-        return parse_obj_as(list[Post], await self.get_json(url=index_url))
+        return parse_obj_as(list[Post], await self.get_resource_as_json(url=index_url))
 
     async def post_show(self, id_: int) -> Post:
         """获取 post 信息
@@ -161,7 +161,7 @@ class BaseMoebooruAPI(BaseCommonAPI, abc.ABC):
 
     async def post_show_similar(self, id_: int) -> SimilarPosts:
         index_url = f'{self._get_root_url()}/post/similar/{id_}.json'
-        return SimilarPosts.model_validate(await self.get_json(url=index_url))
+        return SimilarPosts.model_validate(await self.get_resource_as_json(url=index_url))
 
     """Tags API"""
 
@@ -198,7 +198,7 @@ class BaseMoebooruAPI(BaseCommonAPI, abc.ABC):
             params.update({'name_pattern': name_pattern})
         params = None if not params else params
 
-        return parse_obj_as(list[Tag], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[Tag], await self.get_resource_as_json(url=index_url, params=params))
 
     """Artists API"""
 
@@ -223,7 +223,7 @@ class BaseMoebooruAPI(BaseCommonAPI, abc.ABC):
             params.update({'page': str(page)})
         params = None if not params else params
 
-        return parse_obj_as(list[Artist], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[Artist], await self.get_resource_as_json(url=index_url, params=params))
 
     """Comments API"""
 
@@ -231,7 +231,7 @@ class BaseMoebooruAPI(BaseCommonAPI, abc.ABC):
         url = f'{self._get_root_url()}/comment/show.json/{id_}'
         # alternative_url = f'{self._get_root_url()}/comment/show/{id_}.json'
 
-        return Comment.model_validate(await self.get_json(url=url))
+        return Comment.model_validate(await self.get_resource_as_json(url=url))
 
     """Wiki API"""
 
@@ -259,7 +259,7 @@ class BaseMoebooruAPI(BaseCommonAPI, abc.ABC):
             params.update({'query': query})
         params = None if not params else params
 
-        return parse_obj_as(list[Wiki], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[Wiki], await self.get_resource_as_json(url=index_url, params=params))
 
     """Notes API"""
 
@@ -268,7 +268,7 @@ class BaseMoebooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/note/search.json'
         params = {'query': query}
 
-        return parse_obj_as(list[Note], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[Note], await self.get_resource_as_json(url=index_url, params=params))
 
     async def note_post_show(self, post_id: int) -> list[Note]:
         """show post's notes"""
@@ -279,7 +279,7 @@ class BaseMoebooruAPI(BaseCommonAPI, abc.ABC):
 
         params = {'post_id': post_id}
 
-        return parse_obj_as(list[Note], await self.get_json(url=url, params=params))
+        return parse_obj_as(list[Note], await self.get_resource_as_json(url=url, params=params))
 
     """Users API"""
 
@@ -301,7 +301,7 @@ class BaseMoebooruAPI(BaseCommonAPI, abc.ABC):
             params.update({'name': name})
         params = None if not params else params
 
-        return parse_obj_as(list[User], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[User], await self.get_resource_as_json(url=index_url, params=params))
 
     """Forum API"""
 
@@ -317,7 +317,7 @@ class BaseMoebooruAPI(BaseCommonAPI, abc.ABC):
 
         params = {'parent_id': str(parent_id)} if parent_id is not None else None
 
-        return parse_obj_as(list[Forum], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[Forum], await self.get_resource_as_json(url=index_url, params=params))
 
     """Pools API"""
 
@@ -339,7 +339,7 @@ class BaseMoebooruAPI(BaseCommonAPI, abc.ABC):
             params.update({'page': str(page)})
         params = None if not params else params
 
-        return parse_obj_as(list[Pool], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[Pool], await self.get_resource_as_json(url=index_url, params=params))
 
     async def pool_posts_show(self, pool_id: int, *, page: int | None = None) -> Pool:
         url = f'{self._get_root_url()}/pool/show.json'
@@ -349,7 +349,7 @@ class BaseMoebooruAPI(BaseCommonAPI, abc.ABC):
         if page is not None:
             params.update({'page': str(page)})
 
-        return Pool.model_validate(await self.get_json(url=url, params=params))
+        return Pool.model_validate(await self.get_resource_as_json(url=url, params=params))
 
 
 class BehoimiAPI(BaseMoebooruAPI):

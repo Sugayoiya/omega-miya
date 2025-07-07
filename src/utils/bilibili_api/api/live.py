@@ -22,7 +22,7 @@ class BilibiliLive(BilibiliCommon):
         """获取直播间信息"""
         url = 'https://api.live.bilibili.com/room/v1/Room/get_info'
         params = {'room_id': str(room_id)}
-        data = await cls._get_json(url=url, params=params)
+        data = await cls._get_resource_as_json(url=url, params=params)
         return RoomInfo.model_validate(data)
 
     @classmethod
@@ -30,7 +30,7 @@ class BilibiliLive(BilibiliCommon):
         """根据直播间房间号列表获取这些直播间的信息"""
         url = 'https://api.live.bilibili.com/xlive/web-room/v1/index/getRoomBaseInfo'
         params = (('req_biz', 'web_room_componet'), *(('room_ids', str(x)) for x in room_id_list))
-        data = await cls._get_json(url=url, params=list(params))
+        data = await cls._get_resource_as_json(url=url, params=list(params))
         return RoomBaseInfo.model_validate(data)
 
     @classmethod
@@ -39,7 +39,7 @@ class BilibiliLive(BilibiliCommon):
         url = 'https://api.live.bilibili.com/room/v1/Room/get_status_info_by_uids'
         payload = {'uids': uid_list}
         # 该接口无需鉴权
-        data = await cls._post_json(url=url, json=payload, no_headers=True, no_cookies=True)
+        data = await cls._post_acquire_as_json(url=url, json=payload, no_headers=True, no_cookies=True)
         return UsersRoomInfo.model_validate(data)
 
     @classmethod
@@ -47,7 +47,7 @@ class BilibiliLive(BilibiliCommon):
         """获取直播间对应的主播信息"""
         url = 'https://api.live.bilibili.com/live_user/v1/UserInfo/get_anchor_in_room'
         params = {'roomid': str(room_id)}
-        data = await cls._get_json(url=url, params=params)
+        data = await cls._get_resource_as_json(url=url, params=params)
         return RoomUserInfo.model_validate(data)
 
 

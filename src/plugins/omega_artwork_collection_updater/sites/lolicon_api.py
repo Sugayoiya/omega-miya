@@ -66,7 +66,7 @@ class LoliconAPI(BaseCommonAPI):
     @classmethod
     async def _query_setu(cls, r18: Literal[0, 1, 2] = 2, num: int = 20) -> LoliconAPIReturn:
         json = {'r18': str(r18), 'num': str(num)}
-        return LoliconAPIReturn.model_validate(await cls._post_json(url=cls._get_setu_api_url(), json=json))
+        return LoliconAPIReturn.model_validate(await cls._post_acquire_as_json(url=cls._get_setu_api_url(), json=json))
 
     @classmethod
     async def _add_lolicon_setu_into_database(cls, pixiv_ac: PixivArtworkCollection) -> None:

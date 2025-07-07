@@ -79,7 +79,7 @@ class BilibiliCredential(BilibiliCommon):
     async def get_login_qrcode(cls) -> WebQrcodeGenerateInfo:
         """获取登录二维码信息"""
         url = 'https://passport.bilibili.com/x/passport-login/web/qrcode/generate'
-        data = await cls._get_json(url=url)
+        data = await cls._get_resource_as_json(url=url)
         return WebQrcodeGenerateInfo.model_validate(data)
 
     @classmethod
@@ -148,7 +148,7 @@ class BilibiliCredential(BilibiliCommon):
         url = 'https://passport.bilibili.com/x/passport-login/web/cookie/info'
         params = {'csrf': bili_jct}
 
-        data = await cls._get_json(url=url, params=params)
+        data = await cls._get_resource_as_json(url=url, params=params)
         return WebCookieInfo.model_validate(data).data.refresh
 
     @classmethod
@@ -157,7 +157,7 @@ class BilibiliCredential(BilibiliCommon):
         url = 'https://api.bilibili.com/x/web-interface/nav'
 
         try:
-            data = await cls._get_json(url=url, cookies=bilibili_api_config.bili_cookies)
+            data = await cls._get_resource_as_json(url=url, cookies=bilibili_api_config.bili_cookies)
             verify = WebInterfaceNav.model_validate(data)
         except Exception as e:
             logger.opt(colors=True).error(f'<lc>Bilibili</lc> | <r>登录验证失败</r>, 访问失败, {e}')
@@ -197,7 +197,7 @@ class BilibiliCredential(BilibiliCommon):
         url = 'https://passport.bilibili.com/x/passport-login/web/confirm/refresh'
         params = {'csrf': csrf, 'refresh_token': refresh_token}
 
-        data = await cls._post_json(url=url, params=params)
+        data = await cls._post_acquire_as_json(url=url, params=params)
         return WebConfirmRefreshInfo.model_validate(data)
 
     @classmethod
