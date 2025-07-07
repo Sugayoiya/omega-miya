@@ -9,6 +9,7 @@
 """
 
 import abc
+from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, Any
 
 from nonebot.utils import run_sync
@@ -201,6 +202,54 @@ class BaseCommonAPI(abc.ABC):
         return response
 
     @classmethod
+    async def _stream_request_get(
+            cls,
+            url: str,
+            params: 'QueryTypes' = None,
+            *,
+            headers: 'HeaderTypes' = None,
+            cookies: 'CookieTypes' = None,
+            timeout: int = 10,
+            no_headers: bool = False,
+            no_cookies: bool = False,
+    ) -> AsyncGenerator['Response', None]:
+        """内部方法, 使用 GET 方法发起流式请求"""
+        requests = cls._init_omega_requests(
+            headers=headers, cookies=cookies, timeout=timeout, no_headers=no_headers, no_cookies=no_cookies
+        )
+        async for response in requests.stream_get(url=url, params=params):
+            if response.status_code != 200:
+                raise WebSourceException(response.status_code, str(response.request), response.content)
+            yield response
+
+    @classmethod
+    async def _stream_request_post(
+            cls,
+            url: str,
+            params: 'QueryTypes' = None,
+            *,
+            content: 'ContentTypes' = None,
+            data: 'DataTypes' = None,
+            json: Any = None,
+            files: 'FilesTypes' = None,
+            headers: 'HeaderTypes' = None,
+            cookies: 'CookieTypes' = None,
+            timeout: int = 10,
+            no_headers: bool = False,
+            no_cookies: bool = False,
+    ) -> AsyncGenerator['Response', None]:
+        """内部方法, 使用 POST 方法发起流式请求"""
+        requests = cls._init_omega_requests(
+            headers=headers, cookies=cookies, timeout=timeout, no_headers=no_headers, no_cookies=no_cookies
+        )
+        async for response in requests.stream_post(
+                url=url, params=params, content=content, data=data, json=json, files=files,
+        ):
+            if response.status_code != 200:
+                raise WebSourceException(response.status_code, str(response.request), response.content)
+            yield response
+
+    @classmethod
     async def _get_resource_as_json(
             cls,
             url: str,
@@ -256,6 +305,48 @@ class BaseCommonAPI(abc.ABC):
             headers=headers, cookies=cookies, timeout=timeout, no_headers=no_headers, no_cookies=no_cookies
         )
         return cls._parse_content_as_text(response=response)
+
+    @classmethod
+    async def _stream_get_resource_as_text(
+            cls,
+            url: str,
+            params: 'QueryTypes' = None,
+            *,
+            headers: 'HeaderTypes' = None,
+            cookies: 'CookieTypes' = None,
+            timeout: int = 10,
+            no_headers: bool = False,
+            no_cookies: bool = False,
+    ) -> AsyncGenerator[str, None]:
+        """内部方法, 使用 GET 方法发起流式请求获取内容, 并转换为 str 类型返回"""
+        async for response in cls._stream_request_get(
+                url=url, params=params,
+                headers=headers, cookies=cookies, timeout=timeout, no_headers=no_headers, no_cookies=no_cookies,
+        ):
+            yield cls._parse_content_as_text(response=response)
+
+    @classmethod
+    async def _stream_post_acquire_as_text(
+            cls,
+            url: str,
+            params: 'QueryTypes' = None,
+            *,
+            content: 'ContentTypes' = None,
+            data: 'DataTypes' = None,
+            json: Any = None,
+            files: 'FilesTypes' = None,
+            headers: 'HeaderTypes' = None,
+            cookies: 'CookieTypes' = None,
+            timeout: int = 10,
+            no_headers: bool = False,
+            no_cookies: bool = False,
+    ) -> AsyncGenerator[str, None]:
+        """内部方法, 使用 POST 方法发起流式请求获取内容, 并转换为 str 类型返回"""
+        async for response in cls._stream_request_post(
+                url=url, params=params, content=content, data=data, json=json, files=files,
+                headers=headers, cookies=cookies, timeout=timeout, no_headers=no_headers, no_cookies=no_cookies,
+        ):
+            yield cls._parse_content_as_text(response=response)
 
     @classmethod
     async def _post_acquire_as_json(
