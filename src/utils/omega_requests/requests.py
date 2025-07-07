@@ -161,7 +161,7 @@ class OmegaRequests:
         )
 
     async def request(self, setup: Request) -> 'Response':
-        """装饰原 request 方法, 自动重试"""
+        """发送一个 HTTP 请求, 自动重试"""
         if not isinstance(self.driver, HTTPClientMixin):
             raise RuntimeError(
                 f"Current driver {self.driver.type} doesn't support forward http connections! "
@@ -185,7 +185,7 @@ class OmegaRequests:
             except AsyncTimeoutError as e:
                 logger.opt(colors=True).debug(
                     f'<lc>Omega Requests</lc> | <ly>{setup!r} failed on the {attempts_num + 1} attempt</ly> <c>></c> '
-                    f'<r>TimeoutError</r>'
+                    '<r>TimeoutError</r>'
                 )
                 final_exception = e
             except Exception as e:
@@ -199,10 +199,45 @@ class OmegaRequests:
 
         logger.opt(colors=True).error(
             f'<lc>Omega Requests</lc> | <ly>{setup!r} failed with {attempts_num} times attempts</ly> <c>></c> '
-            f'<r>ExceededAttemptLimited</r>: The number of attempts exceeds limit with final exception: '
+            '<r>ExceededAttemptLimited</r>: The number of attempts exceeds limit with final exception: '
             f'<r>{final_exception.__class__.__name__}</r>: {final_exception}'
         )
-        raise WebSourceException(500, 'The number of attempts exceeds limit.')
+        raise WebSourceException(500, 'The number of attempts exceeds limit.') from final_exception
+
+    async def stream_request(
+            self,
+            setup: Request,
+            *,
+            chunk_size: int = 1024,
+    ) -> AsyncGenerator['Response', None]:
+        """发送一个 HTTP 流式请求"""
+        if not isinstance(self.driver, HTTPClientMixin):
+            raise RuntimeError(
+                f"Current driver {self.driver.type} doesn't support forward http connections! "
+                "OmegaRequests need a HTTPClient Driver to work."
+            )
+
+        # 处理加载 Cloudflare Clearance Cookies
+        if self.load_cloudflare_clearance:
+            domain_cloudflare_clearance = cloudflare_clearance_config.get_url_config(url=str(setup.url))
+            if domain_cloudflare_clearance is not None:
+                setup.headers.update(domain_cloudflare_clearance.get_headers())
+                setup.cookies.update(domain_cloudflare_clearance.get_cookies())
+
+        try:
+            logger.opt(colors=True).trace(f'<lc>Omega Requests</lc> | Starting request <ly>{setup!r}</ly>')
+            async for response in self.driver.stream_request(setup, chunk_size=chunk_size):
+                yield response
+        except AsyncTimeoutError as e:
+            logger.opt(colors=True).debug(
+                f'<lc>Omega Requests</lc> | <ly>{setup!r} failed</ly> with <r>TimeoutError</r>'
+            )
+            raise WebSourceException(504, 'Timeout') from e
+        except Exception as e:
+            logger.opt(colors=True).warning(
+                f'<lc>Omega Requests</lc> | <ly>{setup!r} failed</ly>, <r>Exception {e.__class__.__name__}</r>: {e}'
+            )
+            raise WebSourceException(500, 'Timeout') from e
 
     @asynccontextmanager
     async def websocket(
@@ -218,7 +253,7 @@ class OmegaRequests:
             json: Any = None,
             files: 'FilesTypes' = None,
             timeout: float | None = None,
-            use_proxy: bool = True
+            use_proxy: bool = True,
     ) -> AsyncGenerator['WebSocket', None]:
         """建立 websocket 连接"""
         if not isinstance(self.driver, WebSocketClientMixin):
@@ -256,7 +291,7 @@ class OmegaRequests:
             json: Any = None,
             files: 'FilesTypes' = None,
             timeout: float | None = None,
-            use_proxy: bool = True
+            use_proxy: bool = True,
     ) -> 'Response':
         setup = Request(
             method='GET',
@@ -285,7 +320,7 @@ class OmegaRequests:
             json: Any = None,
             files: 'FilesTypes' = None,
             timeout: float | None = None,
-            use_proxy: bool = True
+            use_proxy: bool = True,
     ) -> 'Response':
         setup = Request(
             method='POST',
@@ -314,7 +349,7 @@ class OmegaRequests:
             json: Any = None,
             files: 'FilesTypes' = None,
             timeout: float | None = None,
-            use_proxy: bool = True
+            use_proxy: bool = True,
     ) -> 'Response':
         setup = Request(
             method='PUT',
@@ -343,7 +378,7 @@ class OmegaRequests:
             json: Any = None,
             files: 'FilesTypes' = None,
             timeout: float | None = None,
-            use_proxy: bool = True
+            use_proxy: bool = True,
     ) -> 'Response':
         setup = Request(
             method='DELETE',
@@ -360,6 +395,68 @@ class OmegaRequests:
         )
         return await self.request(setup=setup)
 
+    async def stream_get(
+            self,
+            url: str,
+            *,
+            params: 'QueryTypes' = None,
+            headers: 'HeaderTypes' = None,
+            cookies: 'CookieTypes' = None,
+            content: 'ContentTypes' = None,
+            data: 'DataTypes' = None,
+            json: Any = None,
+            files: 'FilesTypes' = None,
+            timeout: float | None = None,
+            use_proxy: bool = True,
+            chunk_size: int = 1024,
+    ) -> AsyncGenerator['Response', None]:
+        setup = Request(
+            method='GET',
+            url=url,
+            params=params,
+            headers=self.headers if headers is None else headers,
+            cookies=self.cookies if cookies is None else cookies,
+            content=content,
+            data=data,
+            json=json,
+            files=files,
+            timeout=self.timeout if timeout is None else timeout,
+            proxy=http_proxy_config.proxy_url if use_proxy else None
+        )
+        async for response in self.stream_request(setup, chunk_size=chunk_size):
+            yield response
+
+    async def stream_post(
+            self,
+            url: str,
+            *,
+            params: 'QueryTypes' = None,
+            headers: 'HeaderTypes' = None,
+            cookies: 'CookieTypes' = None,
+            content: 'ContentTypes' = None,
+            data: 'DataTypes' = None,
+            json: Any = None,
+            files: 'FilesTypes' = None,
+            timeout: float | None = None,
+            use_proxy: bool = True,
+            chunk_size: int = 1024,
+    ) -> AsyncGenerator['Response', None]:
+        setup = Request(
+            method='POST',
+            url=url,
+            params=params,
+            headers=self.headers if headers is None else headers,
+            cookies=self.cookies if cookies is None else cookies,
+            content=content,
+            data=data,
+            json=json,
+            files=files,
+            timeout=self.timeout if timeout is None else timeout,
+            proxy=http_proxy_config.proxy_url if use_proxy else None
+        )
+        async for response in self.stream_request(setup, chunk_size=chunk_size):
+            yield response
+
     async def download[T: 'BaseResource'](
             self,
             url: str,
@@ -367,7 +464,7 @@ class OmegaRequests:
             *,
             params: 'QueryTypes' = None,
             ignore_exist_file: bool = False,
-            **kwargs
+            **kwargs,
     ) -> T:
         """下载文件
 
@@ -378,20 +475,107 @@ class OmegaRequests:
         :return: 下载目标路径
         """
         if ignore_exist_file and file.is_file:
+            logger.opt(colors=True).info(
+                f'<lc>Omega Requests</lc> | Download <ly>{url}</ly> to {file} ignored by exist file'
+            )
             return file
+
+        logger.opt(colors=True).debug(
+            f'<lc>Omega Requests</lc> | Starting download <ly>{url}</ly> to {file}'
+        )
 
         response = await self.get(url=url, params=params, **kwargs)
 
         if response.status_code != 200:
-            logger.opt(colors=True).error(f'<lc>Omega Requests</lc> | Download <ly>{url!r}</ly> '
-                                          f'to {file!r} failed with code <lr>{response.status_code!r}</lr>')
+            logger.opt(colors=True).error(
+                f'<lc>Omega Requests</lc> | Download <ly>{url}</ly> to {file} '
+                f'failed with code <lr>{response.status_code!r}</lr>'
+            )
             raise WebSourceException(
-                response.status_code, f'Download {url!r} to {file!r} failed with code {response.status_code!r}'
+                response.status_code,
+                f'Download {url} to {file} failed with code {response.status_code!r}'
             )
 
         async with file.async_open(mode='wb') as af:
             await af.write(self.parse_content_as_bytes(response=response))
 
+        logger.opt(colors=True).success(
+            f'<lc>Omega Requests</lc> | Download <ly>{url}</ly> to {file} completed'
+        )
+        return file
+
+    async def stream_download[T: 'BaseResource'](
+            self,
+            url: str,
+            file: T,
+            *,
+            params: 'QueryTypes' = None,
+            chunk_size: int = 1024 * 16,
+            ignore_exist_file: bool = False,
+            **kwargs,
+    ) -> T:
+        """流式下载文件, 支持断点续传
+
+        :param url: 链接
+        :param file: 下载目标路径
+        :param params: 请求参数
+        :param chunk_size: 分块大小, 默认 16 KB
+        :param ignore_exist_file: 忽略已存在文件, 会同时忽略断点续传
+        :return: 下载目标路径
+        """
+        if ignore_exist_file and file.is_file:
+            logger.opt(colors=True).info(
+                f'<lc>Omega Requests</lc> | Download <ly>{url}</ly> to {file} ignored by exist file'
+            )
+            return file
+
+        clear_restart = False
+        start_byte = file.file_size if file.is_file else 0
+        headers = dict(self.headers.copy())
+        if start_byte > 0:
+            headers.update({'Range': f'bytes={start_byte}-'})
+
+        logger.opt(colors=True).debug(
+            f'<lc>Omega Requests</lc> | Starting stream download <ly>{url}</ly> to {file}'
+        )
+
+        # 追加写入模式打开文件, 分块写入
+        async with file.async_open(mode='ab') as af:
+            async for response in self.stream_get(
+                    url=url, params=params, headers=headers, chunk_size=chunk_size, **kwargs
+            ):
+                if start_byte > 0 and response.status_code == 206:
+                    pass
+                elif start_byte > 0 and response.status_code != 206:
+                    logger.opt(colors=True).warning(
+                        f'<lc>Omega Requests</lc> | Stream download <ly>{url}</ly> to {file} failed, '
+                        'the server does not support breakpoint resuming, and will re-download'
+                    )
+                    clear_restart = True
+                    break
+                elif response.status_code != 200:
+                    logger.opt(colors=True).error(
+                        f'<lc>Omega Requests</lc> | Stream download <ly>{url}</ly> to {file} '
+                        f'failed with code <lr>{response.status_code!r}</lr>'
+                    )
+                    raise WebSourceException(
+                        response.status_code,
+                        f'Download {url} to {file} failed with code {response.status_code!r}'
+                    )
+
+                await af.write(self.parse_content_as_bytes(response=response))
+
+        # 如果需要重新下载, 清空文件并重新请求
+        if clear_restart:
+            async with file.async_open(mode='wb') as _:
+                pass
+            return await self.stream_download(
+                url, file, params=params, chunk_size=chunk_size, ignore_exist_file=ignore_exist_file, **kwargs
+            )
+
+        logger.opt(colors=True).success(
+            f'<lc>Omega Requests</lc> | Download <ly>{url}</ly> to {file} completed'
+        )
         return file
 
 
