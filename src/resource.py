@@ -242,6 +242,12 @@ class BaseResource(abc.ABC):
         """将路径表示为 file URI"""
         return self.path.resolve().as_uri()
 
+    @property
+    @check_file
+    def file_size(self) -> int:
+        """获取路径对应的文件大小(以字节为单位）"""
+        return self.path.stat().st_size
+
     @overload
     def open(
             self,
