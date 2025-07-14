@@ -212,12 +212,13 @@ class BaseCommonAPI(abc.ABC):
             timeout: int = 10,
             no_headers: bool = False,
             no_cookies: bool = False,
+            chunk_size: int = 1024,
     ) -> AsyncGenerator['Response', None]:
         """内部方法, 使用 GET 方法发起流式请求"""
         requests = cls._init_omega_requests(
             headers=headers, cookies=cookies, timeout=timeout, no_headers=no_headers, no_cookies=no_cookies
         )
-        async for response in requests.stream_get(url=url, params=params):
+        async for response in requests.stream_get(url=url, params=params, chunk_size=chunk_size):
             if response.status_code != 200:
                 raise WebSourceException(response.status_code, str(response.request), response.content)
             yield response
@@ -237,13 +238,14 @@ class BaseCommonAPI(abc.ABC):
             timeout: int = 10,
             no_headers: bool = False,
             no_cookies: bool = False,
+            chunk_size: int = 1024,
     ) -> AsyncGenerator['Response', None]:
         """内部方法, 使用 POST 方法发起流式请求"""
         requests = cls._init_omega_requests(
             headers=headers, cookies=cookies, timeout=timeout, no_headers=no_headers, no_cookies=no_cookies
         )
         async for response in requests.stream_post(
-                url=url, params=params, content=content, data=data, json=json, files=files,
+                url=url, params=params, content=content, data=data, json=json, files=files, chunk_size=chunk_size,
         ):
             if response.status_code != 200:
                 raise WebSourceException(response.status_code, str(response.request), response.content)
@@ -317,11 +319,13 @@ class BaseCommonAPI(abc.ABC):
             timeout: int = 10,
             no_headers: bool = False,
             no_cookies: bool = False,
+            chunk_size: int = 1024,
     ) -> AsyncGenerator[str, None]:
         """内部方法, 使用 GET 方法发起流式请求获取内容, 并转换为 str 类型返回"""
         async for response in cls._stream_request_get(
                 url=url, params=params,
-                headers=headers, cookies=cookies, timeout=timeout, no_headers=no_headers, no_cookies=no_cookies,
+                headers=headers, cookies=cookies,
+                timeout=timeout, no_headers=no_headers, no_cookies=no_cookies, chunk_size=chunk_size,
         ):
             yield cls._parse_content_as_text(response=response)
 
@@ -340,11 +344,13 @@ class BaseCommonAPI(abc.ABC):
             timeout: int = 10,
             no_headers: bool = False,
             no_cookies: bool = False,
+            chunk_size: int = 1024,
     ) -> AsyncGenerator[str, None]:
         """内部方法, 使用 POST 方法发起流式请求获取内容, 并转换为 str 类型返回"""
         async for response in cls._stream_request_post(
                 url=url, params=params, content=content, data=data, json=json, files=files,
-                headers=headers, cookies=cookies, timeout=timeout, no_headers=no_headers, no_cookies=no_cookies,
+                headers=headers, cookies=cookies,
+                timeout=timeout, no_headers=no_headers, no_cookies=no_cookies, chunk_size=chunk_size,
         ):
             yield cls._parse_content_as_text(response=response)
 
@@ -387,6 +393,7 @@ class BaseCommonAPI(abc.ABC):
             no_cookies: bool = False,
             hash_file_name: bool = False,
             custom_file_name: str | None = None,
+            stream_download: bool = False,
     ) -> 'TemporaryResource':
         """内部方法, 下载任意资源到本地, 保持原始文件名, 默认直接覆盖同名文件"""
         if custom_file_name is not None:
@@ -404,7 +411,11 @@ class BaseCommonAPI(abc.ABC):
         requests = cls._init_omega_requests(
             headers=headers, cookies=cookies, timeout=timeout, no_headers=no_headers, no_cookies=no_cookies
         )
-        return await requests.download(url=url, file=file, params=params, ignore_exist_file=ignore_exist_file)
+
+        if stream_download:
+            return await requests.stream_download(url, file, params=params, ignore_exist_file=ignore_exist_file)
+        else:
+            return await requests.download(url, file, params=params, ignore_exist_file=ignore_exist_file)
 
 
 __all__ = [
