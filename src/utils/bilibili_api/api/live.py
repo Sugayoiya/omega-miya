@@ -39,7 +39,7 @@ class BilibiliLive(BilibiliCommon):
         url = 'https://api.live.bilibili.com/room/v1/Room/get_status_info_by_uids'
         payload = {'uids': uid_list}
         # 该接口无需鉴权
-        data = await cls._post_acquire_as_json(url=url, json=payload, no_headers=True, no_cookies=True)
+        data = await cls._post_acquire_as_json(url=url, json=payload, no_cookies=True)
         return UsersRoomInfo.model_validate(data)
 
     @classmethod
