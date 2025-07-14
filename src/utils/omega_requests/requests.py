@@ -139,7 +139,7 @@ class OmegaRequests:
             if not content:
                 continue
 
-            trailing_newline = content[-1] in [b'\r', b'\n']
+            trailing_newline = content.endswith(b'\n') or content.endswith(b'\r')
             lines = content.splitlines()
 
             if len(lines) == 1 and not trailing_newline:
@@ -149,7 +149,8 @@ class OmegaRequests:
 
             if buffer:
                 # Include any existing buffer in the first portion of the splitlines result.
-                lines = [buffer + lines[0]] + lines[1:]
+                lines[0] = buffer + lines[0]
+                lines = lines[:]
                 buffer = b''
 
             if not trailing_newline:
@@ -160,10 +161,11 @@ class OmegaRequests:
             for line in lines:
                 yield line.decode(encoding=encoding)
 
-        if not buffer and not trailing_cr:
-            return
+        if trailing_cr:
+            buffer += b'\r'
 
-        yield buffer.decode(encoding=encoding)
+        if buffer:
+            yield buffer.decode(encoding=encoding)
 
     @classmethod
     def parse_url_file_name(cls, url: str) -> str:
@@ -273,7 +275,7 @@ class OmegaRequests:
             logger.opt(colors=True).warning(
                 f'<lc>Omega Requests</lc> | <ly>{setup!r} failed</ly>, <r>Exception {e.__class__.__name__}</r>: {e}'
             )
-            raise WebSourceException(500, 'Timeout') from e
+            raise WebSourceException(500, f'{e.__class__.__name__}, {e}') from e
 
     @asynccontextmanager
     async def websocket(
