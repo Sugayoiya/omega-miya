@@ -29,7 +29,6 @@ from nonebot.drivers import (
 
 from src.exception import WebSourceException
 from .config import http_proxy_config
-from .utils import cloudflare_clearance_config
 
 if TYPE_CHECKING:
     from src.resource import BaseResource
@@ -73,7 +72,6 @@ class OmegaRequests:
             headers: 'HeaderTypes' = None,
             cookies: 'CookieTypes' = None,
             retry: int | None = None,
-            load_cloudflare_clearance: bool = False,
     ):
         self.driver = get_driver()
         if not isinstance(self.driver, ForwardDriver):
@@ -82,11 +80,12 @@ class OmegaRequests:
                 "OmegaRequests need a ForwardDriver to work."
             )
 
-        self.timeout = self._default_timeout_time if timeout is None else timeout
-        self.headers = self._default_headers if headers is None else headers
         self.cookies = cookies
+        self.cookies = None if not self.cookies else self.cookies
+        self.headers = self._default_headers if headers is None else headers
+        self.headers = None if not self.headers else self.headers
         self.retry_limit = self._default_retry_limit if retry is None else retry
-        self.load_cloudflare_clearance = load_cloudflare_clearance
+        self.timeout = self._default_timeout_time if timeout is None else timeout
 
     @staticmethod
     def parse_content_as_bytes(response: 'Response', encoding: str = 'utf-8') -> bytes:
@@ -168,13 +167,6 @@ class OmegaRequests:
                 "OmegaRequests need a HTTPClient Driver to work."
             )
 
-        # 处理加载 Cloudflare Clearance Cookies
-        if self.load_cloudflare_clearance:
-            domain_cloudflare_clearance = cloudflare_clearance_config.get_url_config(url=str(setup.url))
-            if domain_cloudflare_clearance is not None:
-                setup.headers.update(domain_cloudflare_clearance.get_headers())
-                setup.cookies.update(domain_cloudflare_clearance.get_cookies())
-
         # 处理自动重试
         attempts_num = 0
         final_exception = None
@@ -216,13 +208,6 @@ class OmegaRequests:
                 f"Current driver {self.driver.type} doesn't support forward http connections! "
                 "OmegaRequests need a HTTPClient Driver to work."
             )
-
-        # 处理加载 Cloudflare Clearance Cookies
-        if self.load_cloudflare_clearance:
-            domain_cloudflare_clearance = cloudflare_clearance_config.get_url_config(url=str(setup.url))
-            if domain_cloudflare_clearance is not None:
-                setup.headers.update(domain_cloudflare_clearance.get_headers())
-                setup.cookies.update(domain_cloudflare_clearance.get_cookies())
 
         try:
             logger.opt(colors=True).trace(f'<lc>Omega Requests</lc> | Starting request <ly>{setup!r}</ly>')

@@ -1,14 +1,12 @@
 """
 @Author         : Ailitonia
-@Date           : 2022/12/10 20:30
-@FileName       : utils.py
-@Project        : nonebot2_miya
-@Description    : Omega requests handler utils
+@Date           : 2025/7/14 09:30:55
+@FileName       : cf_utils.py
+@Project        : omega-miya
+@Description    : cloudflare WAF utils
 @GitHub         : https://github.com/Ailitonia
 @Software       : PyCharm
 """
-
-from typing import Any
 
 from nonebot import get_plugin_config, logger
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
@@ -35,10 +33,10 @@ class DomainCloudflareClearance(CloudflareClearanceModel):
     cookies: DomainCloudflareClearanceCookies
     headers: DomainCloudflareClearanceHeaders
 
-    def get_cookies(self) -> dict[str, Any]:
+    def get_cookies(self) -> dict[str, str]:
         return {k: v for k, v in self.cookies.model_dump(by_alias=True).items() if v is not None}
 
-    def get_headers(self) -> dict[str, Any]:
+    def get_headers(self) -> dict[str, str]:
         return {k: v for k, v in self.headers.model_dump(by_alias=True).items() if v is not None}
 
 
@@ -57,7 +55,9 @@ class CloudflareClearanceConfig(CloudflareClearanceModel):
         return domain_config
 
     def get_url_config(self, url: str) -> DomainCloudflareClearance | None:
-        domain = TypeAdapter(AnyHttpUrl).validate_python(url).host
+        if (domain := TypeAdapter(AnyHttpUrl).validate_python(url).host) is None:
+            return None
+
         return self.get_domain_config(domain=domain)
 
 
@@ -68,7 +68,6 @@ except ValidationError as e:
 
     logger.opt(colors=True).critical(f'<r>Cloudflare Clearance 配置格式验证失败</r>, 错误信息:\n{e}')
     sys.exit(f'Cloudflare Clearance 配置格式验证失败, {e}')
-
 
 __all__ = [
     'cloudflare_clearance_config',

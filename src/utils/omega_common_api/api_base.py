@@ -15,6 +15,8 @@ from typing import TYPE_CHECKING, Any
 from nonebot.utils import run_sync
 
 from src.exception import WebSourceException
+from .cf_utils import cloudflare_clearance_config
+from .helpers import iter_cookies_types_item, iter_headers_types_item
 from ..omega_requests import OmegaRequests
 
 if TYPE_CHECKING:
@@ -80,18 +82,26 @@ class BaseCommonAPI(abc.ABC):
             no_cookies: bool = False,
     ) -> OmegaRequests:
         """获取 OmegaRequests 实例"""
-        if headers is None:
-            headers = cls._get_default_headers()
-        if no_headers:
-            headers = None
-
-        if cookies is None:
-            cookies = cls._get_default_cookies()
         if no_cookies:
-            cookies = None
+            cookies = {}
+        elif cookies is None:
+            cookies = cls._get_default_cookies()
 
-        lcc = cls._load_cloudflare_clearance()
-        return OmegaRequests(headers=headers, cookies=cookies, timeout=timeout, load_cloudflare_clearance=lcc)
+        if no_headers:
+            headers = {}
+        elif headers is None:
+            headers = cls._get_default_headers()
+
+        # 处理加载 Cloudflare Clearance 参数
+        if cls._load_cloudflare_clearance():
+            domain_cloudflare_clearance = cloudflare_clearance_config.get_url_config(url=cls._get_root_url())
+            if domain_cloudflare_clearance is not None:
+                headers = {k: v for k, v in iter_headers_types_item(headers)}
+                headers.update(domain_cloudflare_clearance.get_headers())
+                cookies = {k: v for k, v in iter_cookies_types_item(cookies)}
+                cookies.update(domain_cloudflare_clearance.get_cookies())
+
+        return OmegaRequests(headers=headers, cookies=cookies, timeout=timeout)
 
     @staticmethod
     def _parse_content_as_bytes(response: 'Response') -> bytes:
