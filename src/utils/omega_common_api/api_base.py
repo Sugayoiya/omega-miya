@@ -115,6 +115,18 @@ class BaseCommonAPI(abc.ABC):
     def _parse_content_as_text(response: 'Response') -> str:
         return OmegaRequests.parse_content_as_text(response)
 
+    @staticmethod
+    async def _iter_content_as_lines(
+            stream_requester: AsyncGenerator['Response', Any],
+            *,
+            encoding: str = 'utf-8',
+    ) -> AsyncGenerator[str, None]:
+        async for line in OmegaRequests.iter_content_as_lines(
+                stream_requester=stream_requester,
+                encoding=encoding
+        ):
+            yield line
+
     @classmethod
     async def _request_get(
             cls,
@@ -319,7 +331,7 @@ class BaseCommonAPI(abc.ABC):
         return cls._parse_content_as_text(response=response)
 
     @classmethod
-    async def _stream_get_resource_as_text(
+    async def _stream_get_resource_iter_lines(
             cls,
             url: str,
             params: 'QueryTypes' = None,
@@ -330,17 +342,26 @@ class BaseCommonAPI(abc.ABC):
             no_headers: bool = False,
             no_cookies: bool = False,
             chunk_size: int = 1024,
+            encoding: str = 'utf-8',
     ) -> AsyncGenerator[str, None]:
-        """内部方法, 使用 GET 方法发起流式请求获取内容, 并转换为 str 类型返回"""
-        async for response in cls._stream_request_get(
-                url=url, params=params,
-                headers=headers, cookies=cookies,
-                timeout=timeout, no_headers=no_headers, no_cookies=no_cookies, chunk_size=chunk_size,
+        """内部方法, 使用 GET 方法发起流式请求获取内容, 转换为 str 类型按行迭代"""
+        async for line in cls._iter_content_as_lines(
+                stream_requester=cls._stream_request_get(
+                    url=url,
+                    params=params,
+                    headers=headers,
+                    cookies=cookies,
+                    timeout=timeout,
+                    no_headers=no_headers,
+                    no_cookies=no_cookies,
+                    chunk_size=chunk_size,
+                ),
+                encoding=encoding,
         ):
-            yield cls._parse_content_as_text(response=response)
+            yield line
 
     @classmethod
-    async def _stream_post_acquire_as_text(
+    async def _stream_post_acquire_iter_lines(
             cls,
             url: str,
             params: 'QueryTypes' = None,
@@ -355,14 +376,27 @@ class BaseCommonAPI(abc.ABC):
             no_headers: bool = False,
             no_cookies: bool = False,
             chunk_size: int = 1024,
+            encoding: str = 'utf-8',
     ) -> AsyncGenerator[str, None]:
-        """内部方法, 使用 POST 方法发起流式请求获取内容, 并转换为 str 类型返回"""
-        async for response in cls._stream_request_post(
-                url=url, params=params, content=content, data=data, json=json, files=files,
-                headers=headers, cookies=cookies,
-                timeout=timeout, no_headers=no_headers, no_cookies=no_cookies, chunk_size=chunk_size,
+        """内部方法, 使用 POST 方法发起流式请求获取内容, 转换为 str 类型按行迭代"""
+        async for line in cls._iter_content_as_lines(
+                stream_requester=cls._stream_request_post(
+                    url=url,
+                    params=params,
+                    content=content,
+                    data=data,
+                    json=json,
+                    files=files,
+                    headers=headers,
+                    cookies=cookies,
+                    timeout=timeout,
+                    no_headers=no_headers,
+                    no_cookies=no_cookies,
+                    chunk_size=chunk_size,
+                ),
+                encoding=encoding,
         ):
-            yield cls._parse_content_as_text(response=response)
+            yield line
 
     @classmethod
     async def _post_acquire_as_json(

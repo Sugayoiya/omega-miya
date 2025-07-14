@@ -115,6 +115,57 @@ class OmegaRequests:
             return '' if response.content is None else str(response.content)
 
     @classmethod
+    async def iter_content_as_lines(
+            cls,
+            stream_requester: AsyncGenerator['Response', Any],
+            *,
+            encoding: str = 'utf-8',
+    ) -> AsyncGenerator[str, None]:
+        """解析流式请求, 按文本行迭代"""
+        buffer: bytes = b''
+        trailing_cr: bool = False
+
+        async for response in stream_requester:
+            content = cls.parse_content_as_bytes(response, encoding=encoding)
+
+            # Always push a trailing `\r` into the next iteration.
+            if trailing_cr:
+                content = b'\r' + content
+                trailing_cr = False
+            if content.endswith(b'\r'):
+                trailing_cr = True
+                content = content[:-1]
+
+            if not content:
+                continue
+
+            trailing_newline = content[-1] in [b'\r', b'\n']
+            lines = content.splitlines()
+
+            if len(lines) == 1 and not trailing_newline:
+                # No new lines, buffer the input and continue.
+                buffer += lines[0]
+                continue
+
+            if buffer:
+                # Include any existing buffer in the first portion of the splitlines result.
+                lines = [buffer + lines[0]] + lines[1:]
+                buffer = b''
+
+            if not trailing_newline:
+                # If the last segment of splitlines is not newline terminated,
+                # then drop it from our output and start a new buffer.
+                buffer = lines.pop()
+
+            for line in lines:
+                yield line.decode(encoding=encoding)
+
+        if not buffer and not trailing_cr:
+            return
+
+        yield buffer.decode(encoding=encoding)
+
+    @classmethod
     def parse_url_file_name(cls, url: str) -> str:
         """尝试解析 url 对应的文件名"""
         parsed_url = urlparse(url=url, allow_fragments=True)
@@ -278,6 +329,7 @@ class OmegaRequests:
             timeout: float | None = None,
             use_proxy: bool = True,
     ) -> 'Response':
+        """发送一个 GET 请求"""
         setup = Request(
             method='GET',
             url=url,
@@ -307,6 +359,7 @@ class OmegaRequests:
             timeout: float | None = None,
             use_proxy: bool = True,
     ) -> 'Response':
+        """发送一个 POST 请求"""
         setup = Request(
             method='POST',
             url=url,
@@ -336,6 +389,7 @@ class OmegaRequests:
             timeout: float | None = None,
             use_proxy: bool = True,
     ) -> 'Response':
+        """发送一个 PUT 请求"""
         setup = Request(
             method='PUT',
             url=url,
@@ -365,6 +419,7 @@ class OmegaRequests:
             timeout: float | None = None,
             use_proxy: bool = True,
     ) -> 'Response':
+        """发送一个 DELETE 请求"""
         setup = Request(
             method='DELETE',
             url=url,
@@ -395,6 +450,7 @@ class OmegaRequests:
             use_proxy: bool = True,
             chunk_size: int = 1024,
     ) -> AsyncGenerator['Response', None]:
+        """发送一个 GET 流式请求"""
         setup = Request(
             method='GET',
             url=url,
@@ -411,6 +467,42 @@ class OmegaRequests:
         async for response in self.stream_request(setup, chunk_size=chunk_size):
             yield response
 
+    async def stream_get_iter_lines(
+            self,
+            url: str,
+            *,
+            params: 'QueryTypes' = None,
+            headers: 'HeaderTypes' = None,
+            cookies: 'CookieTypes' = None,
+            content: 'ContentTypes' = None,
+            data: 'DataTypes' = None,
+            json: Any = None,
+            files: 'FilesTypes' = None,
+            timeout: float | None = None,
+            use_proxy: bool = True,
+            chunk_size: int = 1024,
+            encoding: str = 'utf-8',
+    ) -> AsyncGenerator[str, None]:
+        """发送一个 GET 流式请求, 按行迭代"""
+        setup = Request(
+            method='GET',
+            url=url,
+            params=params,
+            headers=self.headers if headers is None else headers,
+            cookies=self.cookies if cookies is None else cookies,
+            content=content,
+            data=data,
+            json=json,
+            files=files,
+            timeout=self.timeout if timeout is None else timeout,
+            proxy=http_proxy_config.proxy_url if use_proxy else None
+        )
+        async for line in self.iter_content_as_lines(
+                stream_requester=self.stream_request(setup, chunk_size=chunk_size),
+                encoding=encoding,
+        ):
+            yield line
+
     async def stream_post(
             self,
             url: str,
@@ -426,6 +518,7 @@ class OmegaRequests:
             use_proxy: bool = True,
             chunk_size: int = 1024,
     ) -> AsyncGenerator['Response', None]:
+        """发送一个 POST 流式请求"""
         setup = Request(
             method='POST',
             url=url,
@@ -441,6 +534,42 @@ class OmegaRequests:
         )
         async for response in self.stream_request(setup, chunk_size=chunk_size):
             yield response
+
+    async def stream_post_iter_lines(
+            self,
+            url: str,
+            *,
+            params: 'QueryTypes' = None,
+            headers: 'HeaderTypes' = None,
+            cookies: 'CookieTypes' = None,
+            content: 'ContentTypes' = None,
+            data: 'DataTypes' = None,
+            json: Any = None,
+            files: 'FilesTypes' = None,
+            timeout: float | None = None,
+            use_proxy: bool = True,
+            chunk_size: int = 1024,
+            encoding: str = 'utf-8',
+    ) -> AsyncGenerator[str, None]:
+        """发送一个 POST 流式请求, 按行迭代"""
+        setup = Request(
+            method='POST',
+            url=url,
+            params=params,
+            headers=self.headers if headers is None else headers,
+            cookies=self.cookies if cookies is None else cookies,
+            content=content,
+            data=data,
+            json=json,
+            files=files,
+            timeout=self.timeout if timeout is None else timeout,
+            proxy=http_proxy_config.proxy_url if use_proxy else None
+        )
+        async for line in self.iter_content_as_lines(
+                stream_requester=self.stream_request(setup, chunk_size=chunk_size),
+                encoding=encoding,
+        ):
+            yield line
 
     async def download[T: 'BaseResource'](
             self,
@@ -516,7 +645,7 @@ class OmegaRequests:
 
         clear_restart = False
         start_byte = file.file_size if file.is_file else 0
-        headers = dict(self.headers.copy())
+        headers = dict(self.headers if self.headers is not None else {})
         if start_byte > 0:
             headers.update({'Range': f'bytes={start_byte}-'})
 
