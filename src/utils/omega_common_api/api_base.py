@@ -30,6 +30,7 @@ if TYPE_CHECKING:
         HeaderTypes,
         QueryTypes,
         Response,
+        TimeoutTypes,
     )
 
 
@@ -77,7 +78,7 @@ class BaseCommonAPI(abc.ABC):
             cls,
             headers: 'HeaderTypes' = None,
             cookies: 'CookieTypes' = None,
-            timeout: int = 10,
+            timeout: 'TimeoutTypes' = None,
             no_headers: bool = False,
             no_cookies: bool = False,
     ) -> OmegaRequests:
@@ -135,7 +136,7 @@ class BaseCommonAPI(abc.ABC):
             *,
             headers: 'HeaderTypes' = None,
             cookies: 'CookieTypes' = None,
-            timeout: int = 10,
+            timeout: 'TimeoutTypes' = None,
             no_headers: bool = False,
             no_cookies: bool = False,
     ) -> 'Response':
@@ -157,7 +158,7 @@ class BaseCommonAPI(abc.ABC):
             *,
             headers: 'HeaderTypes' = None,
             cookies: 'CookieTypes' = None,
-            timeout: int = 10,
+            timeout: 'TimeoutTypes' = None,
             no_headers: bool = False,
             no_cookies: bool = False,
     ) -> 'Response':
@@ -183,7 +184,7 @@ class BaseCommonAPI(abc.ABC):
             files: 'FilesTypes' = None,
             headers: 'HeaderTypes' = None,
             cookies: 'CookieTypes' = None,
-            timeout: int = 10,
+            timeout: 'TimeoutTypes' = None,
             no_headers: bool = False,
             no_cookies: bool = False,
     ) -> 'Response':
@@ -209,7 +210,7 @@ class BaseCommonAPI(abc.ABC):
             files: 'FilesTypes' = None,
             headers: 'HeaderTypes' = None,
             cookies: 'CookieTypes' = None,
-            timeout: int = 10,
+            timeout: 'TimeoutTypes' = None,
             no_headers: bool = False,
             no_cookies: bool = False,
     ) -> 'Response':
@@ -231,7 +232,7 @@ class BaseCommonAPI(abc.ABC):
             *,
             headers: 'HeaderTypes' = None,
             cookies: 'CookieTypes' = None,
-            timeout: int = 10,
+            timeout: 'TimeoutTypes' = None,
             no_headers: bool = False,
             no_cookies: bool = False,
             chunk_size: int = 1024,
@@ -257,7 +258,7 @@ class BaseCommonAPI(abc.ABC):
             files: 'FilesTypes' = None,
             headers: 'HeaderTypes' = None,
             cookies: 'CookieTypes' = None,
-            timeout: int = 10,
+            timeout: 'TimeoutTypes' = None,
             no_headers: bool = False,
             no_cookies: bool = False,
             chunk_size: int = 1024,
@@ -281,7 +282,7 @@ class BaseCommonAPI(abc.ABC):
             *,
             headers: 'HeaderTypes' = None,
             cookies: 'CookieTypes' = None,
-            timeout: int = 10,
+            timeout: 'TimeoutTypes' = None,
             no_headers: bool = False,
             no_cookies: bool = False,
     ) -> Any:
@@ -300,7 +301,7 @@ class BaseCommonAPI(abc.ABC):
             *,
             headers: 'HeaderTypes' = None,
             cookies: 'CookieTypes' = None,
-            timeout: int = 30,
+            timeout: 'TimeoutTypes' = None,
             no_headers: bool = False,
             no_cookies: bool = False,
     ) -> bytes:
@@ -319,7 +320,7 @@ class BaseCommonAPI(abc.ABC):
             *,
             headers: 'HeaderTypes' = None,
             cookies: 'CookieTypes' = None,
-            timeout: int = 10,
+            timeout: 'TimeoutTypes' = None,
             no_headers: bool = False,
             no_cookies: bool = False,
     ) -> str:
@@ -338,7 +339,7 @@ class BaseCommonAPI(abc.ABC):
             *,
             headers: 'HeaderTypes' = None,
             cookies: 'CookieTypes' = None,
-            timeout: int = 10,
+            timeout: 'TimeoutTypes' = None,
             no_headers: bool = False,
             no_cookies: bool = False,
             chunk_size: int = 1024,
@@ -372,7 +373,7 @@ class BaseCommonAPI(abc.ABC):
             files: 'FilesTypes' = None,
             headers: 'HeaderTypes' = None,
             cookies: 'CookieTypes' = None,
-            timeout: int = 10,
+            timeout: 'TimeoutTypes' = None,
             no_headers: bool = False,
             no_cookies: bool = False,
             chunk_size: int = 1024,
@@ -410,7 +411,7 @@ class BaseCommonAPI(abc.ABC):
             files: 'FilesTypes' = None,
             headers: 'HeaderTypes' = None,
             cookies: 'CookieTypes' = None,
-            timeout: int = 10,
+            timeout: 'TimeoutTypes' = None,
             no_headers: bool = False,
             no_cookies: bool = False,
     ) -> Any:
@@ -430,7 +431,7 @@ class BaseCommonAPI(abc.ABC):
             *,
             headers: 'HeaderTypes' = None,
             cookies: 'CookieTypes' = None,
-            timeout: int = 60,
+            trans_timeout: float = 300.0,
             subdir: str | None = None,
             ignore_exist_file: bool = False,
             no_headers: bool = False,
@@ -453,8 +454,13 @@ class BaseCommonAPI(abc.ABC):
             file = save_folder(subdir, file_name)
 
         requests = cls._init_omega_requests(
-            headers=headers, cookies=cookies, timeout=timeout, no_headers=no_headers, no_cookies=no_cookies
+            headers=headers, cookies=cookies, no_headers=no_headers, no_cookies=no_cookies
         )
+
+        if stream_download:
+            requests.set_timeout(total=trans_timeout, connect=10, read=20)
+        else:
+            requests.set_timeout(total=trans_timeout, connect=10, read=trans_timeout)
 
         if stream_download:
             return await requests.stream_download(url, file, params=params, ignore_exist_file=ignore_exist_file)
