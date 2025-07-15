@@ -24,6 +24,7 @@ from nonebot.drivers import (
     ForwardDriver,
     HTTPClientMixin,
     Request,
+    Timeout,
     WebSocketClientMixin,
 )
 
@@ -42,6 +43,7 @@ if TYPE_CHECKING:
         HeaderTypes,
         QueryTypes,
         Response,
+        TimeoutTypes,
         WebSocket,
     )
 
@@ -50,25 +52,25 @@ class OmegaRequests:
     """对 ForwardDriver 二次封装实现的 HttpClient"""
 
     _default_retry_limit: int = 3
-    _default_timeout_time: float = 10.0
+    _default_timeout: Timeout = Timeout(total=30, connect=10, read=20)
     _default_headers: dict[str, str] = {
         'accept': '*/*',
         'accept-encoding': 'gzip, deflate, br',
         'accept-language': 'zh-CN,zh;q=0.9',
         'dnt': '1',
-        'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+        'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
         'sec-ch-ua-mobile': '?0',
         'sec-ch-ua-platform': '"Windows"',
         'sec-gpc': '1',
         'upgrade-insecure-requests': '1',
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                      'Chrome/131.0.0.0 Safari/537.36'
+                      'Chrome/138.0.0.0 Safari/537.36'
     }
 
     def __init__(
             self,
             *,
-            timeout: float | None = None,
+            timeout: 'TimeoutTypes' = None,
             headers: 'HeaderTypes' = None,
             cookies: 'CookieTypes' = None,
             retry: int | None = None,
@@ -85,7 +87,7 @@ class OmegaRequests:
         self.headers = self._default_headers if headers is None else headers
         self.headers = None if not self.headers else self.headers
         self.retry_limit = self._default_retry_limit if retry is None else retry
-        self.timeout = self._default_timeout_time if timeout is None else timeout
+        self.timeout = self._default_timeout if timeout is None else timeout
 
     @staticmethod
     def parse_content_as_bytes(response: 'Response', encoding: str = 'utf-8') -> bytes:
@@ -212,6 +214,14 @@ class OmegaRequests:
             proxy=http_proxy_config.proxy_url if use_proxy else None
         )
 
+    def set_timeout(
+            self,
+            total: Optional[float],
+            connect: Optional[float],
+            read: Optional[float],
+    ) -> None:
+        self.timeout = Timeout(total=total, connect=connect, read=read)
+
     async def request(self, setup: Request) -> 'Response':
         """发送一个 HTTP 请求, 自动重试"""
         if not isinstance(self.driver, HTTPClientMixin):
@@ -290,7 +300,7 @@ class OmegaRequests:
             data: 'DataTypes' = None,
             json: Any = None,
             files: 'FilesTypes' = None,
-            timeout: float | None = None,
+            timeout: 'TimeoutTypes' = None,
             use_proxy: bool = True,
     ) -> AsyncGenerator['WebSocket', None]:
         """建立 websocket 连接"""
@@ -328,7 +338,7 @@ class OmegaRequests:
             data: 'DataTypes' = None,
             json: Any = None,
             files: 'FilesTypes' = None,
-            timeout: float | None = None,
+            timeout: 'TimeoutTypes' = None,
             use_proxy: bool = True,
     ) -> 'Response':
         """发送一个 GET 请求"""
@@ -358,7 +368,7 @@ class OmegaRequests:
             data: 'DataTypes' = None,
             json: Any = None,
             files: 'FilesTypes' = None,
-            timeout: float | None = None,
+            timeout: 'TimeoutTypes' = None,
             use_proxy: bool = True,
     ) -> 'Response':
         """发送一个 POST 请求"""
@@ -388,7 +398,7 @@ class OmegaRequests:
             data: 'DataTypes' = None,
             json: Any = None,
             files: 'FilesTypes' = None,
-            timeout: float | None = None,
+            timeout: 'TimeoutTypes' = None,
             use_proxy: bool = True,
     ) -> 'Response':
         """发送一个 PUT 请求"""
@@ -418,7 +428,7 @@ class OmegaRequests:
             data: 'DataTypes' = None,
             json: Any = None,
             files: 'FilesTypes' = None,
-            timeout: float | None = None,
+            timeout: 'TimeoutTypes' = None,
             use_proxy: bool = True,
     ) -> 'Response':
         """发送一个 DELETE 请求"""
@@ -448,7 +458,7 @@ class OmegaRequests:
             data: 'DataTypes' = None,
             json: Any = None,
             files: 'FilesTypes' = None,
-            timeout: float | None = None,
+            timeout: 'TimeoutTypes' = None,
             use_proxy: bool = True,
             chunk_size: int = 1024,
     ) -> AsyncGenerator['Response', None]:
@@ -480,7 +490,7 @@ class OmegaRequests:
             data: 'DataTypes' = None,
             json: Any = None,
             files: 'FilesTypes' = None,
-            timeout: float | None = None,
+            timeout: 'TimeoutTypes' = None,
             use_proxy: bool = True,
             chunk_size: int = 1024,
             encoding: str = 'utf-8',
@@ -516,7 +526,7 @@ class OmegaRequests:
             data: 'DataTypes' = None,
             json: Any = None,
             files: 'FilesTypes' = None,
-            timeout: float | None = None,
+            timeout: 'TimeoutTypes' = None,
             use_proxy: bool = True,
             chunk_size: int = 1024,
     ) -> AsyncGenerator['Response', None]:
@@ -548,7 +558,7 @@ class OmegaRequests:
             data: 'DataTypes' = None,
             json: Any = None,
             files: 'FilesTypes' = None,
-            timeout: float | None = None,
+            timeout: 'TimeoutTypes' = None,
             use_proxy: bool = True,
             chunk_size: int = 1024,
             encoding: str = 'utf-8',
