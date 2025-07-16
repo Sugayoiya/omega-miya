@@ -8,6 +8,7 @@
 @Software       : PyCharm
 """
 
+from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, Literal, Self
 
 from src.compat import dump_obj_as
@@ -15,6 +16,7 @@ from src.utils import BaseCommonAPI
 from .config import openai_service_config
 from .models import (
     ChatCompletion,
+    ChatCompletionChunk,
     Embeddings,
     File,
     FileContent,
@@ -149,6 +151,36 @@ class BaseOpenAIClient(BaseCommonAPI):
         }
         response = await self._post_acquire_as_json(url=url, json=data, headers=self.request_headers, timeout=timeout)
         return ChatCompletion.model_validate(response)
+
+    async def create_chat_completion_using_stream(
+            self,
+            model: str,
+            message: 'ChatMessage',
+            *,
+            timeout: int = 60,
+            **kwargs,
+    ) -> AsyncGenerator[ChatCompletionChunk, None]:
+        url = f'{self.base_url}/chat/completions'
+        data = {
+            'model': model,
+            'messages': dump_obj_as(
+                list[MessageContent],
+                message.messages if isinstance(message, Message) else message,
+                mode='json',
+                exclude_none=True,
+            ),
+            'stream': True,
+            **kwargs,
+        }
+
+        line_prefix = r'data: '
+        eof_target = r'[DONE]'
+        async for line in self._stream_post_acquire_iter_lines(
+                url=url, json=data, headers=self.request_headers, timeout=timeout, chunk_size=64,
+        ):
+            if line and line.startswith(line_prefix):
+                if (content := line.removeprefix(line_prefix).strip()) != eof_target:
+                    yield ChatCompletionChunk.model_validate_json(content)
 
     async def create_embeddings(
             self,
