@@ -13,6 +13,7 @@ import inspect
 from collections.abc import AsyncGenerator, Callable, Coroutine
 from contextlib import asynccontextmanager
 from functools import wraps
+from types import TracebackType
 from typing import TYPE_CHECKING, Annotated, Any, NoReturn, Self, cast
 
 from nonebot.adapters import Bot as BaseBot
@@ -158,6 +159,18 @@ class OmegaMatcherInterface:
         self.matcher = matcher
         self.entity = self.get_entity(bot=bot, event=event, session=session, acquire_type=acquire_type)
 
+    async def __aenter__(self) -> Self:
+        """Enter the matcher interface context and starting new session."""
+        return self
+
+    async def __aexit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc_val: BaseException | None,
+            exc_tb: TracebackType | None,
+    ) -> bool | None:
+        """Exit the matcher interface context waiting for session completion."""
+
     @asynccontextmanager
     async def restart_new_session(self, acquire_type: EntityAcquireType = 'event') -> AsyncGenerator[Self, None]:
         """使用当前参数重新开始新 session"""
@@ -189,16 +202,23 @@ class OmegaMatcherInterface:
     def depend(
             cls,
             acquire_type: EntityAcquireType = 'event'
-    ) -> Callable[[BaseBot, BaseEvent, Matcher, AsyncSession], Self]:
+    ) -> Callable[[BaseBot, BaseEvent, Matcher, AsyncSession], AsyncGenerator[Self, None]]:
         """获取注入依赖, 用于 Event/Matcher 中初始化"""
 
-        def _depend(
+        async def _depend(
                 bot: BaseBot,
                 event: BaseEvent,
                 matcher: Matcher,
                 session: Annotated[AsyncSession, Depends(get_db_session)],
-        ) -> Self:
-            return cls(bot=bot, event=event, matcher=matcher, session=session, acquire_type=acquire_type)
+        ) -> AsyncGenerator[Self, None]:
+            async with cls(
+                    bot=bot,
+                    event=event,
+                    matcher=matcher,
+                    session=session,
+                    acquire_type=acquire_type,
+            ) as interface:
+                yield interface
 
         return _depend
 
