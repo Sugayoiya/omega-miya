@@ -319,12 +319,12 @@ class OmegaMatcherInterface:
             message: 'SentOmegaMessage',
             revoke_interval: int = 60,
             **revoke_kwargs
-    ) -> asyncio.TimerHandle:
+    ) -> tuple['SentMessageResponse', asyncio.TimerHandle]:
         """发送消息指定时间后自动撤回"""
         sent_return = await self.send(message=message)
 
         loop = asyncio.get_running_loop()
-        return loop.call_later(
+        return sent_return, loop.call_later(
             revoke_interval,
             lambda: loop.create_task(self.get_event_depend().revoke(sent_return=sent_return, **revoke_kwargs)),
         )
