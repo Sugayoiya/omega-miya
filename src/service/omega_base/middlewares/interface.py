@@ -35,6 +35,7 @@ if TYPE_CHECKING:
 
     from ..internal import OmegaEntity
     from ..message import Message as OmegaMessage
+    from .models import SentMessageResponse
     from .platform_interface.entity_target import BaseEntityTarget
     from .platform_interface.event_depend import EventDepend
     from .platform_interface.message_builder import Builder, Extractor
@@ -301,15 +302,15 @@ class OmegaMatcherInterface:
     """Matcher 及流程控制相关方法"""
 
     @check_adapter_implemented
-    async def send(self, message: 'SentOmegaMessage', **kwargs) -> Any:
+    async def send(self, message: 'SentOmegaMessage', **kwargs) -> 'SentMessageResponse':
         return await self.get_event_depend().send(message=message, **kwargs)
 
     @check_adapter_implemented
-    async def send_at_sender(self, message: 'SentOmegaMessage', **kwargs) -> Any:
+    async def send_at_sender(self, message: 'SentOmegaMessage', **kwargs) -> 'SentMessageResponse':
         return await self.get_event_depend().send_at_sender(message=message, **kwargs)
 
     @check_adapter_implemented
-    async def send_reply(self, message: 'SentOmegaMessage', **kwargs) -> Any:
+    async def send_reply(self, message: 'SentOmegaMessage', **kwargs) -> 'SentMessageResponse':
         return await self.get_event_depend().send_reply(message=message, **kwargs)
 
     @check_adapter_implemented

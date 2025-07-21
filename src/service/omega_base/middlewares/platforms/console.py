@@ -17,7 +17,7 @@ from nonebot.adapters.console import MessageEvent as ConsoleMessageEvent
 from nonebot.adapters.console import MessageSegment as ConsoleMessageSegment
 
 from ..const import SupportedPlatform, SupportedTarget
-from ..models import EntityInitParams, EntityTargetRevokeParams, EntityTargetSendParams
+from ..models import EntityInitParams, EntityTargetRevokeParams, EntityTargetSendParams, SentMessageResponse
 from ..platform_interface.entity_target import BaseEntityTarget, entity_target_register
 from ..platform_interface.event_depend import BaseEventDepend, event_depend_register
 from ..platform_interface.message_builder import BaseMessageBuilder, message_builder_register
@@ -113,13 +113,16 @@ class ConsoleEventDepend[Event_T: ConsoleEvent](BaseEventDepend[ConsoleBot, Even
     def get_omega_message_extractor(self) -> type['BaseMessageBuilder[ConsoleMessage, OmegaMessage]']:
         return ConsoleMessageExtractor
 
-    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    def extract_platform_sent_message_response(self, response: Any) -> 'SentMessageResponse':
         raise NotImplementedError
 
-    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         raise NotImplementedError
 
-    async def revoke(self, sent_return: Any, **kwargs) -> Any:
+    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
+        raise NotImplementedError
+
+    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
         raise NotImplementedError
 
     def get_user_nickname(self) -> str:
@@ -141,10 +144,20 @@ class ConsoleEventDepend[Event_T: ConsoleEvent](BaseEventDepend[ConsoleBot, Even
 @event_depend_register.register_depend(ConsoleMessageEvent)
 class ConsoleMessageEventDepend(ConsoleEventDepend[ConsoleMessageEvent]):
 
-    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    def extract_platform_sent_message_response(self, response: Any) -> 'SentMessageResponse':
+        target_entity_params = self._extract_event_entity_params()
+        return SentMessageResponse.model_validate({
+            'sent_message_id': '-1',
+            'bot_self_id': target_entity_params.bot_id,
+            'target_id': target_entity_params.entity_id,
+            'target_type': target_entity_params.entity_type,
+            'raw_response': response,
+        })
+
+    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         return await self.send(message=message, **kwargs)
 
-    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         return await self.send(message=message, **kwargs)
 
     def get_user_nickname(self) -> str:

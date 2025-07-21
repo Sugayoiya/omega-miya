@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from ...message import Message as OmegaMessage
-    from ..models import EntityInitParams
+    from ..models import EntityInitParams, SentMessageResponse
     from ..typing import BaseMessageType, BaseSentMessageType
     from .message_builder import BaseMessageBuilder
 
@@ -80,22 +80,28 @@ class BaseEventDepend[Bot_T: 'BaseBot', Event_T: 'BaseEvent', Message_T: 'BaseMe
     def build_platform_message(self, message: 'BaseSentMessageType[OmegaMessage]') -> Message_T:
         return self.get_omega_message_builder()(message=message).message
 
-    async def send(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    @abc.abstractmethod
+    def extract_platform_sent_message_response(self, response: Any) -> 'SentMessageResponse':
+        """解析平台发送消息后的响应"""
+        raise NotImplementedError
+
+    async def send(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         """发送消息"""
-        return await self.bot.send(event=self.event, message=self.build_platform_message(message=message), **kwargs)
+        response = await self.bot.send(self.event, self.build_platform_message(message=message), **kwargs)
+        return self.extract_platform_sent_message_response(response=response)
 
     @abc.abstractmethod
-    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         """发送消息并 @Sender"""
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         """发送消息作为另一条消息的回复"""
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def revoke(self, sent_return: Any, **kwargs) -> Any:
+    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
         """撤回/删除一条已发送的消息
 
         :param sent_return: bot.send() 的返回值

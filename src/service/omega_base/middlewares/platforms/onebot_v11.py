@@ -24,7 +24,7 @@ from nonebot.adapters.onebot.v11 import PokeNotifyEvent as OneBotV11PokeNotifyEv
 from nonebot.adapters.onebot.v11 import PrivateMessageEvent as OneBotV11PrivateMessageEvent
 
 from ..const import SupportedPlatform, SupportedTarget
-from ..models import EntityInitParams, EntityTargetRevokeParams, EntityTargetSendParams
+from ..models import EntityInitParams, EntityTargetRevokeParams, EntityTargetSendParams, SentMessageResponse
 from ..platform_interface.entity_target import BaseEntityTarget, entity_target_register
 from ..platform_interface.event_depend import BaseEventDepend, event_depend_register
 from ..platform_interface.message_builder import BaseMessageBuilder, message_builder_register
@@ -293,13 +293,23 @@ class OneBotV11EventDepend[Event_T: OneBotV11Event](BaseEventDepend[OneBotV11Bot
     def get_omega_message_extractor(self) -> type['BaseMessageBuilder[OneBotV11Message, OmegaMessage]']:
         return OneBotV11MessageExtractor
 
-    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    def extract_platform_sent_message_response(self, response: Any) -> 'SentMessageResponse':
+        target_entity_params = self._extract_event_entity_params()
+        return SentMessageResponse.model_validate({
+            'sent_message_id': response['message_id'],
+            'bot_self_id': target_entity_params.bot_id,
+            'target_id': target_entity_params.entity_id,
+            'target_type': target_entity_params.entity_type,
+            'raw_response': response,
+        })
+
+    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         raise NotImplementedError
 
-    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         raise NotImplementedError
 
-    async def revoke(self, sent_return: Any, **kwargs) -> Any:
+    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
         raise NotImplementedError
 
     def get_user_nickname(self) -> str:
@@ -321,10 +331,10 @@ class OneBotV11EventDepend[Event_T: OneBotV11Event](BaseEventDepend[OneBotV11Bot
 @event_depend_register.register_depend(OneBotV11NoticeEvent)
 class OneBotV11NoticeEventDepend[Event_T: OneBotV11NoticeEvent](OneBotV11EventDepend[Event_T]):
 
-    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         return await self.send(message=message, at_sender=True, **kwargs)
 
-    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         return await self.send(message=message, reply_message=True, **kwargs)
 
 
@@ -365,14 +375,14 @@ class OneBotV11PokeNotifyEventDepend(OneBotV11NotifyEventDepend[OneBotV11PokeNot
 @event_depend_register.register_depend(OneBotV11MessageEvent)
 class OneBotV11MessageEventDepend[Event_T: OneBotV11MessageEvent](OneBotV11EventDepend[Event_T]):
 
-    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         return await self.send(message=message, at_sender=True, **kwargs)
 
-    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         return await self.send(message=message, reply_message=True, **kwargs)
 
-    async def revoke(self, sent_return: Any, **kwargs) -> Any:
-        return await self.bot.delete_msg(message_id=sent_return['message_id'])
+    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+        return await self.bot.delete_msg(message_id=int(sent_return.sent_message_id))
 
     def get_user_nickname(self) -> str:
         nickname = self.event.sender.card if self.event.sender.card else self.event.sender.nickname

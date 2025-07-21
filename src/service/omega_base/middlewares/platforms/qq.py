@@ -25,7 +25,7 @@ from nonebot.adapters.qq.models import Message, MessageReference
 from nonebot.matcher import current_event
 
 from ..const import SupportedPlatform, SupportedTarget
-from ..models import EntityInitParams, EntityTargetRevokeParams, EntityTargetSendParams
+from ..models import EntityInitParams, EntityTargetRevokeParams, EntityTargetSendParams, SentMessageResponse
 from ..platform_interface.entity_target import BaseEntityTarget, entity_target_register
 from ..platform_interface.event_depend import BaseEventDepend, event_depend_register
 from ..platform_interface.message_builder import BaseMessageBuilder, message_builder_register
@@ -119,6 +119,7 @@ class QQMessageExtractor(BaseMessageBuilder[QQMessage, OmegaMessage]):
             case _:
                 return OmegaMessageSegment.other(type_=seg_type, data=seg_data)
 
+
 @entity_target_register.register_target(SupportedTarget.qq_guild)
 class QQGuildEntityTarget(BaseEntityTarget):
 
@@ -142,6 +143,7 @@ class QQGuildEntityTarget(BaseEntityTarget):
 
     async def call_api_send_file(self, file_path: str, file_name: str) -> None:
         raise NotImplementedError
+
 
 @entity_target_register.register_target(SupportedTarget.qq_channel)
 class QQChannelEntityTarget(BaseEntityTarget):
@@ -186,6 +188,7 @@ class QQChannelEntityTarget(BaseEntityTarget):
     async def call_api_send_file(self, file_path: str, file_name: str) -> None:
         raise NotImplementedError  # TODO
 
+
 @entity_target_register.register_target(SupportedTarget.qq_group)
 class QQGroupEntityTarget(BaseEntityTarget):
 
@@ -204,6 +207,7 @@ class QQGroupEntityTarget(BaseEntityTarget):
     async def call_api_send_file(self, file_path: str, file_name: str) -> None:
         raise NotImplementedError  # TODO post_group_files
 
+
 @entity_target_register.register_target(SupportedTarget.qq_user)
 class QQUserEntityTarget(BaseEntityTarget):
 
@@ -221,6 +225,7 @@ class QQUserEntityTarget(BaseEntityTarget):
 
     async def call_api_send_file(self, file_path: str, file_name: str) -> None:
         raise NotImplementedError  # TODO post_c2c_files
+
 
 @entity_target_register.register_target(SupportedTarget.qq_guild_user)
 class QQGuildUserEntityTarget(BaseEntityTarget):
@@ -267,6 +272,7 @@ class QQGuildUserEntityTarget(BaseEntityTarget):
     async def call_api_send_file(self, file_path: str, file_name: str) -> None:
         raise NotImplementedError  # TODO
 
+
 @event_depend_register.register_depend(QQEvent)
 class QQEventDepend[Event_T: QQEvent](BaseEventDepend[QQBot, Event_T, QQMessage]):
 
@@ -284,13 +290,16 @@ class QQEventDepend[Event_T: QQEvent](BaseEventDepend[QQBot, Event_T, QQMessage]
     def get_omega_message_extractor(self) -> type['BaseMessageBuilder[QQMessage, OmegaMessage]']:
         return QQMessageExtractor
 
-    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    def extract_platform_sent_message_response(self, response: Any) -> 'SentMessageResponse':
         raise NotImplementedError
 
-    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         raise NotImplementedError
 
-    async def revoke(self, sent_return: Any, **kwargs) -> Any:
+    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
+        raise NotImplementedError
+
+    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
         raise NotImplementedError
 
     def get_user_nickname(self) -> str:
@@ -325,18 +334,31 @@ class QQGuildMessageEventDepend(QQEventDepend[QQGuildMessageEvent]):
             entity_name=self.event.author.username, entity_info=self.event.author.avatar
         )
 
-    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    def extract_platform_sent_message_response(self, response: Any) -> 'SentMessageResponse':
+        target_entity_params = self._extract_event_entity_params()
+        return SentMessageResponse.model_validate({
+            'sent_message_id': response.id,
+            'bot_self_id': target_entity_params.bot_id,
+            'target_id': response.channel_id,
+            'target_type': target_entity_params.entity_type,
+            'raw_response': response,
+        })
+
+    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         built_message = self.build_platform_message(message=message)
         send_message = QQMessageSegment.mention_user(user_id=self.event.author.id) + built_message
         return await self.bot.send(event=self.event, message=send_message, **kwargs)
 
-    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         built_message = self.build_platform_message(message=message)
         send_message = QQMessageSegment.reference(reference=MessageReference(message_id=self.event.id)) + built_message
         return await self.bot.send(event=self.event, message=send_message, **kwargs)
 
-    async def revoke(self, sent_return: Any, **kwargs) -> Any:
-        return await self.bot.delete_message(channel_id=sent_return.channel_id, message_id=sent_return.id, **kwargs)
+    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+        return await self.bot.delete_message(
+            channel_id=sent_return.target_id,
+            message_id=sent_return.sent_message_id,
+        )
 
     def get_user_nickname(self) -> str:
         return self.event.author.username if self.event.author.username else ''
@@ -381,18 +403,31 @@ class QQC2CMessageCreateEventDepend(QQEventDepend[QQC2CMessageCreateEvent]):
             entity_info=f'id: {self.event.author.id}, openid: {self.event.author.user_openid}'
         )
 
-    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    def extract_platform_sent_message_response(self, response: Any) -> 'SentMessageResponse':
+        target_entity_params = self._extract_event_entity_params()
+        return SentMessageResponse.model_validate({
+            'sent_message_id': response.id,
+            'bot_self_id': target_entity_params.bot_id,
+            'target_id': target_entity_params.entity_id,
+            'target_type': target_entity_params.entity_type,
+            'raw_response': response,
+        })
+
+    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         built_message = self.build_platform_message(message=message)
         send_message = QQMessageSegment.mention_user(user_id=self.event.author.user_openid) + built_message
         return await self.bot.send(event=self.event, message=send_message, **kwargs)
 
-    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         built_message = self.build_platform_message(message=message)
         send_message = QQMessageSegment.reference(reference=MessageReference(message_id=self.event.id)) + built_message
         return await self.bot.send(event=self.event, message=send_message, **kwargs)
 
-    async def revoke(self, sent_return: Any, **kwargs) -> Any:
-        return await self.bot.delete_c2c_message(openid=self.event.author.user_openid, message_id=sent_return.id)
+    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+        return await self.bot.delete_c2c_message(
+            openid=sent_return.target_id,
+            message_id=sent_return.sent_message_id,
+        )
 
     def get_user_nickname(self) -> str:
         raise NotImplementedError  # QQ 协议只有 openid, 不支持获取用户信息
@@ -431,18 +466,31 @@ class QQGroupAtMessageCreateEventDepend(QQEventDepend[QQGroupAtMessageCreateEven
             entity_info=f'id: {self.event.author.id}, member_openid: {self.event.author.member_openid}'
         )
 
-    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    def extract_platform_sent_message_response(self, response: Any) -> 'SentMessageResponse':
+        target_entity_params = self._extract_event_entity_params()
+        return SentMessageResponse.model_validate({
+            'sent_message_id': response.id,
+            'bot_self_id': target_entity_params.bot_id,
+            'target_id': target_entity_params.entity_id,
+            'target_type': target_entity_params.entity_type,
+            'raw_response': response,
+        })
+
+    async def send_at_sender(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         built_message = self.build_platform_message(message=message)
         send_message = QQMessageSegment.mention_user(user_id=self.event.author.member_openid) + built_message
         return await self.bot.send(event=self.event, message=send_message, **kwargs)
 
-    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> Any:
+    async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         built_message = self.build_platform_message(message=message)
         send_message = QQMessageSegment.reference(reference=MessageReference(message_id=self.event.id)) + built_message
         return await self.bot.send(event=self.event, message=send_message, **kwargs)
 
-    async def revoke(self, sent_return: Any, **kwargs) -> Any:
-        return await self.bot.delete_group_message(group_openid=self.event.group_openid, message_id=sent_return.id)
+    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+        return await self.bot.delete_group_message(
+            group_openid=sent_return.target_id,
+            message_id=sent_return.sent_message_id,
+        )
 
     def get_user_nickname(self) -> str:
         raise NotImplementedError  # QQ 协议只有 openid, 不支持获取用户信息
