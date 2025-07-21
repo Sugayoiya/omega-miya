@@ -15,9 +15,9 @@ from typing import TYPE_CHECKING, Any
 
 from nonebot.log import logger
 
-from src.service.omega_multibot_support import get_online_bots
 from ..const import SupportedTarget
 from ..exception import BotNoFound, TargetNotSupported
+from ....omega_multibot_support import get_online_bots
 
 if TYPE_CHECKING:
     from nonebot.adapters import Bot as BaseBot

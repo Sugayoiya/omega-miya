@@ -12,9 +12,9 @@ import uuid
 
 from nonebot import get_driver, logger
 
-from src.service.apscheduler import scheduler
-from src.service.omega_global_cache import OmegaGlobalCache
 from .config import short_link_config
+from ..apscheduler import scheduler
+from ..omega_global_cache import OmegaGlobalCache
 
 _SHORT_LINK_CACHE = OmegaGlobalCache(
     cache_name='omega_short_link',

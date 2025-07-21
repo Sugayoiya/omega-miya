@@ -13,9 +13,9 @@ from fastapi.responses import FileResponse
 from nonebot.log import logger
 
 from src.resource import AnyResource, BaseResourceHostProtocol, BaseResource
-from src.service.omega_api import OmegaAPI
 from .config import file_host_config
 from .utils import query_file_path, query_file_uuid
+from ..omega_api import OmegaAPI
 
 _FILE_HOST_API = OmegaAPI(
     app_name='omega_file_host',

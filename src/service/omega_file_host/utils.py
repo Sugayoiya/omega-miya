@@ -13,9 +13,9 @@ from typing import TYPE_CHECKING
 
 from nonebot import get_driver, logger
 
-from src.service.apscheduler import scheduler
-from src.service.omega_global_cache import OmegaGlobalCache
 from .config import file_host_config
+from ..apscheduler import scheduler
+from ..omega_global_cache import OmegaGlobalCache
 
 if TYPE_CHECKING:
     from src.resource import BaseResource

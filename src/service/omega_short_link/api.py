@@ -12,9 +12,9 @@ from fastapi import HTTPException
 from fastapi.responses import RedirectResponse
 from nonebot.log import logger
 
-from src.service.omega_api import OmegaAPI
 from .config import short_link_config
 from .utils import query_short_link_url, query_url_short_link_uuid
+from ..omega_api import OmegaAPI
 
 _SHORT_LINK_API = OmegaAPI(
     app_name='omega_short_link',
