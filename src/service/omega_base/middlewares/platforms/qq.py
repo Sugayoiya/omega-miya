@@ -311,6 +311,9 @@ class QQEventDepend[Event_T: QQEvent](BaseEventDepend[QQBot, Event_T, QQMessage]
     def get_msg_image_urls(self) -> list[str]:
         raise NotImplementedError
 
+    def get_reply_msg_id(self) -> str | None:
+        raise NotImplementedError
+
     def get_reply_msg_image_urls(self) -> list[str]:
         raise NotImplementedError
 
@@ -372,6 +375,15 @@ class QQGuildMessageEventDepend(QQEventDepend[QQGuildMessageEvent]):
 
     def get_msg_image_urls(self) -> list[str]:
         return [str(msg_seg.data.get('url')) for msg_seg in self.event.get_message() if msg_seg.type == 'image']
+
+    def get_reply_msg_id(self) -> str | None:
+        # `GuildMessageEvent.reply` 使用 `get_message_of_id` API 提取回复消息
+        # 参考 QQ 适配器 `bot.py` 模块 `_check_reply` 方法
+        # `event.reply.id` 与 `event.message_reference.message_id` 等价
+        if self.event.message_reference:
+            return self.event.message_reference.message_id
+        else:
+            return None
 
     def get_reply_msg_image_urls(self) -> list[str]:
         if self.event.reply:
@@ -442,11 +454,14 @@ class QQC2CMessageCreateEventDepend(QQEventDepend[QQC2CMessageCreateEvent]):
     def get_msg_image_urls(self) -> list[str]:
         return [str(msg_seg.data.get('url')) for msg_seg in self.event.get_message() if msg_seg.type == 'image']
 
+    def get_reply_msg_id(self) -> str | None:
+        raise NotImplementedError  # NOTE: QQ API not support currently
+
     def get_reply_msg_image_urls(self) -> list[str]:
-        raise NotImplementedError  # QQ 协议消息只有回复序列 id, 不支持获取回复消息内容
+        raise NotImplementedError  # NOTE: QQ API not support currently
 
     def get_reply_msg_plain_text(self) -> str | None:
-        raise NotImplementedError  # QQ 协议消息只有回复序列 id, 不支持获取回复消息内容
+        raise NotImplementedError  # NOTE: QQ API not support currently
 
 
 @event_depend_register.register_depend(QQGroupAtMessageCreateEvent)
@@ -505,11 +520,14 @@ class QQGroupAtMessageCreateEventDepend(QQEventDepend[QQGroupAtMessageCreateEven
     def get_msg_image_urls(self) -> list[str]:
         return [str(msg_seg.data.get('url')) for msg_seg in self.event.get_message() if msg_seg.type == 'image']
 
+    def get_reply_msg_id(self) -> str | None:
+        raise NotImplementedError  # NOTE: QQ API not support currently
+
     def get_reply_msg_image_urls(self) -> list[str]:
-        raise NotImplementedError  # QQ 协议消息只有回复序列 id, 不支持获取回复消息内容
+        raise NotImplementedError  # NOTE: QQ API not support currently
 
     def get_reply_msg_plain_text(self) -> str | None:
-        raise NotImplementedError  # QQ 协议消息只有回复序列 id, 不支持获取回复消息内容
+        raise NotImplementedError  # NOTE: QQ API not support currently
 
 
 def _parse_url_to_path(url: str) -> str | Path:

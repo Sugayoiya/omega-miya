@@ -321,6 +321,9 @@ class OneBotV11EventDepend[Event_T: OneBotV11Event](BaseEventDepend[OneBotV11Bot
     def get_msg_image_urls(self) -> list[str]:
         raise NotImplementedError
 
+    def get_reply_msg_id(self) -> str | None:
+        raise NotImplementedError
+
     def get_reply_msg_image_urls(self) -> list[str]:
         raise NotImplementedError
 
@@ -393,6 +396,12 @@ class OneBotV11MessageEventDepend[Event_T: OneBotV11MessageEvent](OneBotV11Event
 
     def get_msg_image_urls(self) -> list[str]:
         return [str(msg_seg.data.get('url')) for msg_seg in self.event.message if msg_seg.type == 'image']
+
+    def get_reply_msg_id(self) -> str | None:
+        if self.event.reply:
+            return str(self.event.reply.message_id)
+        else:
+            return None
 
     def get_reply_msg_image_urls(self) -> list[str]:
         if self.event.reply:

@@ -80,6 +80,9 @@ class BaseEventDepend[Bot_T: 'BaseBot', Event_T: 'BaseEvent', Message_T: 'BaseMe
     def build_platform_message(self, message: 'BaseSentMessageType[OmegaMessage]') -> Message_T:
         return self.get_omega_message_builder()(message=message).message
 
+    def extract_platform_message(self, message: Message_T) -> OmegaMessage:
+        return self.get_omega_message_extractor()(message=message).message
+
     @abc.abstractmethod
     def extract_platform_sent_message_response(self, response: Any) -> 'SentMessageResponse':
         """解析平台发送消息后的响应"""
@@ -125,6 +128,11 @@ class BaseEventDepend[Bot_T: 'BaseBot', Event_T: 'BaseEvent', Message_T: 'BaseMe
     @abc.abstractmethod
     def get_msg_image_urls(self) -> list[str]:
         """获取当前事件消息中的全部图片链接"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_reply_msg_id(self) -> str | None:
+        """获取回复消息的消息ID"""
         raise NotImplementedError
 
     @abc.abstractmethod
