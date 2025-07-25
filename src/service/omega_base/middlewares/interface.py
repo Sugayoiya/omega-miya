@@ -295,6 +295,11 @@ class OmegaMatcherInterface:
         return self.get_event_depend().get_msg_image_urls()
 
     @check_event_implemented
+    def get_event_reply_msg_id(self) -> str | None:
+        """获取当前事件回复消息的消息ID"""
+        return self.get_event_depend().get_reply_msg_id()
+
+    @check_event_implemented
     def get_event_reply_msg_image_urls(self) -> list[str]:
         """获取当前事件回复消息中的全部图片链接"""
         return self.get_event_depend().get_reply_msg_image_urls()
