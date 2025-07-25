@@ -80,7 +80,7 @@ class BaseEventDepend[Bot_T: 'BaseBot', Event_T: 'BaseEvent', Message_T: 'BaseMe
     def build_platform_message(self, message: 'BaseSentMessageType[OmegaMessage]') -> Message_T:
         return self.get_omega_message_builder()(message=message).message
 
-    def extract_platform_message(self, message: Message_T) -> OmegaMessage:
+    def extract_platform_message(self, message: Message_T) -> 'OmegaMessage':
         return self.get_omega_message_extractor()(message=message).message
 
     @abc.abstractmethod
