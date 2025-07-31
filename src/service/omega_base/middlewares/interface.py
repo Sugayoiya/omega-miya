@@ -14,7 +14,7 @@ from collections.abc import AsyncGenerator, Callable, Coroutine
 from contextlib import asynccontextmanager
 from functools import wraps
 from types import TracebackType
-from typing import TYPE_CHECKING, Annotated, Any, NoReturn, Self, cast
+from typing import TYPE_CHECKING, Annotated, Any, Concatenate, NoReturn, Self
 
 from nonebot.adapters import Bot as BaseBot
 from nonebot.adapters import Event as BaseEvent
@@ -52,19 +52,18 @@ class OmegaEntityInterface:
         self._entity = entity
 
     @staticmethod
-    def check_target_implemented[** P, R](
-            func: Callable[P, Coroutine[Any, Any, R]],
-    ) -> Callable[P, Coroutine[Any, Any, R]]:
+    def check_target_implemented[**P, R, T1, T2, ST: 'OmegaEntityInterface'](
+            func: Callable[Concatenate[ST, P], Coroutine[T1, T2, R]],
+    ) -> Callable[Concatenate[ST, P], Coroutine[T1, T2, R]]:
         """装饰一个调用平台 API 的异步方法, 检查该方法调用的函数/方法是否实现, 如未实现则统一抛出 TargetNotSupported 异常"""
         if not inspect.iscoroutinefunction(func):
             raise TypeError(f'{func.__name__} is not coroutine function')
 
         @wraps(func)
-        async def _wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        async def _wrapper(self: ST, *args: P.args, **kwargs: P.kwargs) -> R:
             try:
-                return await func(*args, **kwargs)
+                return await func(self, *args, **kwargs)
             except NotImplementedError:
-                self: Self = cast(Self, args[0])
                 logger.warning(f'{self._entity} not support method {func.__name__!r}')
                 raise TargetNotSupported(self._entity.entity_type, f'method {func.__name__!r} is not implemented')
 
@@ -224,34 +223,34 @@ class OmegaMatcherInterface:
         return _depend
 
     @staticmethod
-    def check_adapter_implemented[** P, R](
-            func: Callable[P, Coroutine[Any, Any, R]],
-    ) -> Callable[P, Coroutine[Any, Any, R]]:
+    def check_adapter_implemented[**P, R, T1, T2, ST: 'OmegaMatcherInterface'](
+            func: Callable[Concatenate[ST, P], Coroutine[T1, T2, R]],
+    ) -> Callable[Concatenate[ST, P], Coroutine[T1, T2, R]]:
         """装饰一个调用平台 API 的异步方法, 检查该方法调用的函数/方法是否实现, 如未实现则统一抛出 AdapterNotSupported 异常"""
         if not inspect.iscoroutinefunction(func):
             raise TypeError(f'{func.__name__} is not coroutine function')
 
         @wraps(func)
-        async def _wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        async def _wrapper(self: ST, *args: P.args, **kwargs: P.kwargs) -> R:
             try:
-                return await func(*args, **kwargs)
+                return await func(self, *args, **kwargs)
             except NotImplementedError:
-                self: Self = cast(Self, args[0])
                 logger.warning(f'{self.bot}/{self.event} not support method {func.__name__!r}')
                 raise AdapterNotSupported(self.bot.adapter.get_name(), f'method {func.__name__!r} is not implemented')
 
         return _wrapper
 
     @staticmethod
-    def check_event_implemented[** P, R](func: Callable[P, R]) -> Callable[P, R]:
+    def check_event_implemented[**P, R, ST: 'OmegaMatcherInterface'](
+            func: Callable[Concatenate[ST, P], R],
+    ) -> Callable[Concatenate[ST, P], R]:
         """装饰一个事件依赖的同步方法, 检查该方法调用的函数/方法是否实现, 如未实现则统一抛出 AdapterNotSupported 异常"""
 
         @wraps(func)
-        def _wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        def _wrapper(self: ST, *args: P.args, **kwargs: P.kwargs) -> R:
             try:
-                return func(*args, **kwargs)
+                return func(self, *args, **kwargs)
             except NotImplementedError:
-                self: Self = cast(Self, args[0])
                 logger.warning(f'{self.bot}/{self.event} not support method {func.__name__!r}')
                 raise AdapterNotSupported(self.bot.adapter.get_name(), f'method {func.__name__!r} is not implemented')
 
