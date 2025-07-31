@@ -8,6 +8,7 @@
 @Software       : PyCharm
 """
 
+import abc
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -114,8 +115,20 @@ class OneBotV11MessageExtractor(BaseMessageBuilder[OneBotV11Message, OmegaMessag
                 return OmegaMessageSegment.other(type_=seg_type, data=seg_data)
 
 
+class OneBotV11BaseEntityTarget(BaseEntityTarget, abc.ABC):
+
+    def extract_sent_message_api_response(self, response: Any) -> 'SentMessageResponse':
+        return SentMessageResponse.model_validate({
+            'sent_message_id': response['message_id'],
+            'bot_self_id': self.entity.bot_id,
+            'target_id': self.entity.entity_id,
+            'target_type': self.entity.entity_type,
+            'raw_response': response,
+        })
+
+
 @entity_target_register.register_target(SupportedTarget.onebot_v11_user)
-class OneBotV11UserEntityTarget(BaseEntityTarget):
+class OneBotV11UserEntityTarget(OneBotV11BaseEntityTarget):
 
     def get_api_to_send_msg(self, **kwargs) -> 'EntityTargetSendParams':
         return EntityTargetSendParams(
@@ -126,8 +139,8 @@ class OneBotV11UserEntityTarget(BaseEntityTarget):
             }
         )
 
-    def get_api_to_revoke_msgs(self, sent_return: Any, **kwargs) -> 'EntityTargetRevokeParams':
-        return EntityTargetRevokeParams(api='delete_msg', params={'message_id': sent_return['message_id']})
+    def get_api_to_revoke_msgs(self, sent_return: 'SentMessageResponse', **kwargs) -> 'EntityTargetRevokeParams':
+        return EntityTargetRevokeParams(api='delete_msg', params={'message_id': sent_return.sent_message_id})
 
     async def call_api_get_entity_name(self) -> str:
         bot = await self.get_bot()
@@ -155,7 +168,7 @@ class OneBotV11UserEntityTarget(BaseEntityTarget):
 
 
 @entity_target_register.register_target(SupportedTarget.onebot_v11_group)
-class OneBotV11GroupEntityTarget(BaseEntityTarget):
+class OneBotV11GroupEntityTarget(OneBotV11BaseEntityTarget):
 
     def get_api_to_send_msg(self, **kwargs) -> 'EntityTargetSendParams':
         return EntityTargetSendParams(
@@ -166,8 +179,8 @@ class OneBotV11GroupEntityTarget(BaseEntityTarget):
             }
         )
 
-    def get_api_to_revoke_msgs(self, sent_return: Any, **kwargs) -> 'EntityTargetRevokeParams':
-        return EntityTargetRevokeParams(api='delete_msg', params={'message_id': sent_return['message_id']})
+    def get_api_to_revoke_msgs(self, sent_return: 'SentMessageResponse', **kwargs) -> 'EntityTargetRevokeParams':
+        return EntityTargetRevokeParams(api='delete_msg', params={'message_id': sent_return.sent_message_id})
 
     async def call_api_get_entity_name(self) -> str:
         bot = await self.get_bot()
@@ -186,12 +199,12 @@ class OneBotV11GroupEntityTarget(BaseEntityTarget):
 
 
 @entity_target_register.register_target(SupportedTarget.onebot_v11_guild)
-class OneBotV11GuildEntityTarget(BaseEntityTarget):
+class OneBotV11GuildEntityTarget(OneBotV11BaseEntityTarget):
 
     def get_api_to_send_msg(self, **kwargs) -> 'EntityTargetSendParams':
         raise NotImplementedError  # 非标准 API, 协议端未实现
 
-    def get_api_to_revoke_msgs(self, sent_return: Any, **kwargs) -> 'EntityTargetRevokeParams':
+    def get_api_to_revoke_msgs(self, sent_return: 'SentMessageResponse', **kwargs) -> 'EntityTargetRevokeParams':
         raise NotImplementedError  # 非标准 API, 协议端未实现
 
     async def call_api_get_entity_name(self) -> str:
@@ -208,7 +221,7 @@ class OneBotV11GuildEntityTarget(BaseEntityTarget):
 
 
 @entity_target_register.register_target(SupportedTarget.onebot_v11_guild_channel)
-class OneBotV11GuildChannelEntityTarget(BaseEntityTarget):
+class OneBotV11GuildChannelEntityTarget(OneBotV11BaseEntityTarget):
 
     def get_api_to_send_msg(self, **kwargs) -> 'EntityTargetSendParams':
         return EntityTargetSendParams(
@@ -220,7 +233,7 @@ class OneBotV11GuildChannelEntityTarget(BaseEntityTarget):
             }
         )
 
-    def get_api_to_revoke_msgs(self, sent_return: Any, **kwargs) -> 'EntityTargetRevokeParams':
+    def get_api_to_revoke_msgs(self, sent_return: 'SentMessageResponse', **kwargs) -> 'EntityTargetRevokeParams':
         raise NotImplementedError  # 非标准 API, 协议端未实现
 
     async def call_api_get_entity_name(self) -> str:
@@ -234,12 +247,12 @@ class OneBotV11GuildChannelEntityTarget(BaseEntityTarget):
 
 
 @entity_target_register.register_target(SupportedTarget.onebot_v11_guild_user)
-class OneBotV11GuildUserEntityTarget(BaseEntityTarget):
+class OneBotV11GuildUserEntityTarget(OneBotV11BaseEntityTarget):
 
     def get_api_to_send_msg(self, **kwargs) -> 'EntityTargetSendParams':
         raise NotImplementedError  # 非标准 API, 协议端未实现
 
-    def get_api_to_revoke_msgs(self, sent_return: Any, **kwargs) -> 'EntityTargetRevokeParams':
+    def get_api_to_revoke_msgs(self, sent_return: 'SentMessageResponse', **kwargs) -> 'EntityTargetRevokeParams':
         raise NotImplementedError  # 非标准 API, 协议端未实现
 
     async def call_api_get_entity_name(self) -> str:

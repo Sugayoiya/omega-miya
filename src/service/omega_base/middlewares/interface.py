@@ -14,7 +14,7 @@ from collections.abc import AsyncGenerator, Callable, Coroutine
 from contextlib import asynccontextmanager
 from functools import wraps
 from types import TracebackType
-from typing import TYPE_CHECKING, Annotated, Any, Concatenate, NoReturn, Self
+from typing import TYPE_CHECKING, Annotated, Concatenate, NoReturn, Self
 
 from nonebot.adapters import Bot as BaseBot
 from nonebot.adapters import Event as BaseEvent
@@ -91,31 +91,33 @@ class OmegaEntityInterface:
     """在 Event/Matcher 之外向目标 Entity 直接发送消息的相关方法"""
 
     @check_target_implemented
-    async def send_entity_message(self, message: 'SentOmegaMessage', **kwargs) -> Any:
+    async def send_entity_message(self, message: 'SentOmegaMessage', **kwargs) -> 'SentMessageResponse':
         """向 Entity 直接发送消息"""
         bot = await self.get_bot()
         message_builder = await self.get_message_builder()
+        entity_target = self.get_entity_target()
 
-        send_params = self.get_entity_target().get_api_to_send_msg(**kwargs)
+        send_params = entity_target.get_api_to_send_msg(**kwargs)
         send_message = message_builder(message=message).message
 
         bot_api_params = {send_params.message_param_name: send_message, **send_params.params}
-        return await getattr(bot, send_params.api)(**bot_api_params)
+        response = await getattr(bot, send_params.api)(**bot_api_params)
+        return entity_target.extract_sent_message_api_response(response)
 
     @check_target_implemented
     async def send_entity_message_auto_revoke(
             self,
             message: 'SentOmegaMessage',
             revoke_interval: int = 60,
-            **kwargs
-    ) -> Any:
+            **kwargs,
+    ) -> tuple['SentMessageResponse', asyncio.TimerHandle]:
         """向 Entity 直接发送消息并在一定时间后撤回"""
         bot = await self.get_bot()
         sent_return = await self.send_entity_message(message=message)
         revoke_params = self.get_entity_target().get_api_to_revoke_msgs(sent_return=sent_return, **kwargs)
 
         loop = asyncio.get_running_loop()
-        return loop.call_later(
+        return sent_return, loop.call_later(
             revoke_interval,
             lambda: loop.create_task(getattr(bot, revoke_params.api)(**revoke_params.params)),
         )

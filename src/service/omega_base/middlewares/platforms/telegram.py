@@ -104,6 +104,23 @@ class TelegramMessageExtractor(BaseMessageBuilder[TelegramMessage, OmegaMessage]
 
 class BaseTelegramEntityTarget(BaseEntityTarget):
 
+    def extract_sent_message_api_response(self, response: Any) -> 'SentMessageResponse':
+        if isinstance(response, Sequence):
+            message_ids = [x.message_id for x in response]
+            chat_id = response[0].chat.id
+        else:
+            message_ids = [response.message_id]
+            chat_id = response.chat.id
+
+        return SentMessageResponse.model_validate({
+            'sent_message_id': message_ids[0],
+            'extra_sent_message_ids': message_ids[1:],
+            'bot_self_id': self.entity.bot_id,
+            'target_id': chat_id,
+            'target_type': self.entity.entity_type,
+            'raw_response': response,
+        })
+
     def get_api_to_send_msg(self, **kwargs) -> 'EntityTargetSendParams':
         return EntityTargetSendParams(
             api='send_to',
@@ -113,14 +130,13 @@ class BaseTelegramEntityTarget(BaseEntityTarget):
             }
         )
 
-    def get_api_to_revoke_msgs(self, sent_return: Any, **kwargs) -> 'EntityTargetRevokeParams':
-        if isinstance(sent_return, Sequence):
-            chat_id = sent_return[0].chat.id
-            message_ids = [x.message_id for x in sent_return]
+    def get_api_to_revoke_msgs(self, sent_return: 'SentMessageResponse', **kwargs) -> 'EntityTargetRevokeParams':
+        if sent_return.extra_sent_message_ids:
+            message_ids = [int(x) for x in (sent_return.sent_message_id, *sent_return.extra_sent_message_ids)]
             return EntityTargetRevokeParams(
                 api='delete_messages',
                 params={
-                    'chat_id': chat_id,
+                    'chat_id': sent_return.target_id,
                     'message_ids': message_ids,
                 },
             )
@@ -128,8 +144,8 @@ class BaseTelegramEntityTarget(BaseEntityTarget):
             return EntityTargetRevokeParams(
                 api='delete_message',
                 params={
-                    'chat_id': sent_return.chat.id,
-                    'message_id': sent_return.message_id,
+                    'chat_id': sent_return.target_id,
+                    'message_id': sent_return.sent_message_id,
                 },
             )
 

@@ -123,10 +123,13 @@ class QQMessageExtractor(BaseMessageBuilder[QQMessage, OmegaMessage]):
 @entity_target_register.register_target(SupportedTarget.qq_guild)
 class QQGuildEntityTarget(BaseEntityTarget):
 
+    def extract_sent_message_api_response(self, response: Any) -> 'SentMessageResponse':
+        raise NotImplementedError
+
     def get_api_to_send_msg(self, **kwargs) -> 'EntityTargetSendParams':
         raise NotImplementedError
 
-    def get_api_to_revoke_msgs(self, sent_return: Any, **kwargs) -> 'EntityTargetRevokeParams':
+    def get_api_to_revoke_msgs(self, sent_return: 'SentMessageResponse', **kwargs) -> 'EntityTargetRevokeParams':
         raise NotImplementedError
 
     async def call_api_get_entity_name(self) -> str:
@@ -148,6 +151,18 @@ class QQGuildEntityTarget(BaseEntityTarget):
 @entity_target_register.register_target(SupportedTarget.qq_channel)
 class QQChannelEntityTarget(BaseEntityTarget):
 
+    def extract_sent_message_api_response(self, response: Any) -> 'SentMessageResponse':
+        if not isinstance(response, Message):
+            raise ValueError(f'Sent message({response!r}) can not be revoked')
+
+        return SentMessageResponse.model_validate({
+            'sent_message_id': response.id,
+            'bot_self_id': self.entity.bot_id,
+            'target_id': response.channel_id,
+            'target_type': self.entity.entity_type,
+            'raw_response': response,
+        })
+
     def get_api_to_send_msg(self, **kwargs) -> 'EntityTargetSendParams':
         params = {'channel_id': self.entity.entity_id}
         if 'msg_id' in kwargs:
@@ -168,12 +183,10 @@ class QQChannelEntityTarget(BaseEntityTarget):
             params=params
         )
 
-    def get_api_to_revoke_msgs(self, sent_return: Any, **kwargs) -> 'EntityTargetRevokeParams':
-        if not isinstance(sent_return, Message):
-            raise ValueError(f'Sent message({sent_return!r}) can not be revoked')
+    def get_api_to_revoke_msgs(self, sent_return: 'SentMessageResponse', **kwargs) -> 'EntityTargetRevokeParams':
         return EntityTargetRevokeParams(
             api='delete_message',
-            params={'channel_id': sent_return.channel_id, 'message_id': sent_return.id}
+            params={'channel_id': sent_return.target_id, 'message_id': sent_return.sent_message_id}
         )
 
     async def call_api_get_entity_name(self) -> str:
@@ -192,10 +205,13 @@ class QQChannelEntityTarget(BaseEntityTarget):
 @entity_target_register.register_target(SupportedTarget.qq_group)
 class QQGroupEntityTarget(BaseEntityTarget):
 
+    def extract_sent_message_api_response(self, response: Any) -> 'SentMessageResponse':
+        raise NotImplementedError  # TODO
+
     def get_api_to_send_msg(self, **kwargs) -> 'EntityTargetSendParams':
         raise NotImplementedError  # TODO send_to_group
 
-    def get_api_to_revoke_msgs(self, sent_return: Any, **kwargs) -> 'EntityTargetRevokeParams':
+    def get_api_to_revoke_msgs(self, sent_return: 'SentMessageResponse', **kwargs) -> 'EntityTargetRevokeParams':
         raise NotImplementedError  # TODO
 
     async def call_api_get_entity_name(self) -> str:
@@ -211,10 +227,13 @@ class QQGroupEntityTarget(BaseEntityTarget):
 @entity_target_register.register_target(SupportedTarget.qq_user)
 class QQUserEntityTarget(BaseEntityTarget):
 
+    def extract_sent_message_api_response(self, response: Any) -> 'SentMessageResponse':
+        raise NotImplementedError  # TODO
+
     def get_api_to_send_msg(self, **kwargs) -> 'EntityTargetSendParams':
         raise NotImplementedError  # TODO send_to_c2c
 
-    def get_api_to_revoke_msgs(self, sent_return: Any, **kwargs) -> 'EntityTargetRevokeParams':
+    def get_api_to_revoke_msgs(self, sent_return: 'SentMessageResponse', **kwargs) -> 'EntityTargetRevokeParams':
         raise NotImplementedError  # TODO
 
     async def call_api_get_entity_name(self) -> str:
@@ -229,6 +248,18 @@ class QQUserEntityTarget(BaseEntityTarget):
 
 @entity_target_register.register_target(SupportedTarget.qq_guild_user)
 class QQGuildUserEntityTarget(BaseEntityTarget):
+
+    def extract_sent_message_api_response(self, response: Any) -> 'SentMessageResponse':
+        if not isinstance(response, Message):
+            raise ValueError(f'Sent message({response!r}) can not be revoked')
+
+        return SentMessageResponse.model_validate({
+            'sent_message_id': response.id,
+            'bot_self_id': self.entity.bot_id,
+            'target_id': response.guild_id,
+            'target_type': self.entity.entity_type,
+            'raw_response': response,
+        })
 
     def get_api_to_send_msg(self, **kwargs) -> 'EntityTargetSendParams':
         params = {'guild_id': self.entity.parent_id}
@@ -250,7 +281,7 @@ class QQGuildUserEntityTarget(BaseEntityTarget):
             params=params
         )
 
-    def get_api_to_revoke_msgs(self, sent_return: Any, **kwargs) -> 'EntityTargetRevokeParams':
+    def get_api_to_revoke_msgs(self, sent_return: 'SentMessageResponse', **kwargs) -> 'EntityTargetRevokeParams':
         raise NotImplementedError  # 暂不支持主动撤回 dms 私聊消息
 
     async def call_api_get_entity_name(self) -> str:

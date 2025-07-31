@@ -72,6 +72,15 @@ class ConsoleMessageExtractor(BaseMessageBuilder[ConsoleMessage, OmegaMessage]):
 @entity_target_register.register_target(SupportedTarget.console_user)
 class ConsoleEntityTarget(BaseEntityTarget):
 
+    def extract_sent_message_api_response(self, response: Any) -> 'SentMessageResponse':
+        return SentMessageResponse.model_validate({
+            'sent_message_id': '-1',
+            'bot_self_id': self.entity.bot_id,
+            'target_id': self.entity.entity_id,
+            'target_type': self.entity.entity_type,
+            'raw_response': response,
+        })
+
     def get_api_to_send_msg(self, **kwargs) -> 'EntityTargetSendParams':
         return EntityTargetSendParams(
             api='send_msg',
@@ -81,7 +90,7 @@ class ConsoleEntityTarget(BaseEntityTarget):
             }
         )
 
-    def get_api_to_revoke_msgs(self, sent_return: Any, **kwargs) -> 'EntityTargetRevokeParams':
+    def get_api_to_revoke_msgs(self, sent_return: 'SentMessageResponse', **kwargs) -> 'EntityTargetRevokeParams':
         raise NotImplementedError
 
     async def call_api_get_entity_name(self) -> str:
