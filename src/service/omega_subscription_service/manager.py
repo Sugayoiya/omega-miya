@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from src.database.internal.entity import Entity
     from src.database.internal.social_media_content import SocialMediaContent
     from src.database.internal.subscription_source import SubscriptionSource
+    from src.service.omega_base.middlewares.models import SentMessageResponse
 
 
 class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
@@ -286,7 +287,11 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
             logger.warning(f'{cls.__name__} | Checking {entity} notice at all node failed, {e!r}')
             return False
 
-    async def _sender_entity_message(self, entity: 'Entity', message: str | OmegaMessage) -> None:
+    async def _entity_message_send_postprocessor(self, response: 'SentMessageResponse', smc_item: 'SMC_T') -> None:
+        """向 Entity 发送消息的后处理"""
+        pass
+
+    async def _send_entity_message(self, entity: 'Entity', message: str | OmegaMessage, smc_item: 'SMC_T') -> None:
         """向 Entity 发送消息"""
         try:
             async with begin_db_session() as session:
@@ -298,7 +303,10 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
                     message = OmegaMessageSegment.at_all() + message
 
                 # 向对应 Entity 发送消息
-                await OmEI(entity=internal_entity).send_entity_message(message=message)
+                response = await OmEI(entity=internal_entity).send_entity_message(message=message)
+
+                # 执行消息发送后处理
+                await self._entity_message_send_postprocessor(response=response, smc_item=smc_item)
         except ActionFailed as e:
             logger.warning(f'{self} | Sending message to {entity} failed with ActionFailed, {e!r}')
         except Exception as e:
@@ -313,7 +321,7 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
 
         subscribed_entity = await self.query_subscribed_entity_by_sub_source()
         send_tasks = [
-            self._sender_entity_message(entity=entity, message=send_message)
+            self._send_entity_message(entity=entity, message=send_message, smc_item=smc_item)
             for entity in subscribed_entity
         ]
         await semaphore_gather(tasks=send_tasks, semaphore_num=self._LIMIT_SMC_SEND_ENTITY)
