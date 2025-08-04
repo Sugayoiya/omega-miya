@@ -131,7 +131,7 @@ class ArtworkHandlerManager[T: 'ImageOpsMixin']:
         else:
             response = await interface.send_reply(send_msg)
 
-        await ARTWORK_CONTEXT_MANAGER.set_message_context(response=response, data=artwork_data)
+        await ARTWORK_CONTEXT_MANAGER.set_message_context(response=response, **artwork_data.model_dump())
 
     async def _send_artworks_preview_message(
             self,
