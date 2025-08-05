@@ -69,10 +69,14 @@ class OmegaEntityInterface:
 
         return _wrapper
 
+    @staticmethod
+    def get_entity_target_type(target_name: str) -> type['BaseEntityTarget']:
+        """获取 Entity 对应的中间件平台 API 适配器类"""
+        return entity_target_register.get_target(target_name=SupportedTarget(target_name))
+
     def get_entity_target(self) -> 'BaseEntityTarget':
         """获取 Entity 的中间件平台 API 适配器"""
-        entity_target_t = entity_target_register.get_target(target_name=SupportedTarget(self._entity.entity_type))
-        return entity_target_t(entity=self._entity)
+        return self.get_entity_target_type(target_name=self._entity.entity_type)(entity=self._entity)
 
     async def get_bot(self) -> 'BaseBot':
         """获取 Entity 对应的 Bot 实例, 未在线则会抛出 BotNoFound 异常"""
@@ -262,8 +266,14 @@ class OmegaMatcherInterface:
         """获取事件 Entity 的 OmegaEntityInterface 实例"""
         return OmegaEntityInterface(entity=self.entity)
 
+    @staticmethod
+    def get_event_depend_type(target_event: 'BaseEvent') -> type['EventDepend']:
+        """获取事件对应的中间件平台事件对象解析器类"""
+        return event_depend_register.get_depend(target_event=target_event)
+
     def get_event_depend(self) -> 'EventDepend':
-        return event_depend_register.get_depend(target_event=self.event)(bot=self.bot, event=self.event)
+        """获取的中间件平台事件对象解析器"""
+        return self.get_event_depend_type(target_event=self.event)(bot=self.bot, event=self.event)
 
     def get_message_builder(self) -> type['Builder']:
         """获取 Bot 对应平台的消息构造器"""
