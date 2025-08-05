@@ -29,7 +29,7 @@ _FILE_HOST_CACHE = OmegaGlobalCache(
 
 @scheduler.scheduled_job(
     'cron',
-    minute='*/5',
+    minute='*/15',
     second='11',
     id='omega_file_host_sync_file_host_cache',
     coalesce=True,
