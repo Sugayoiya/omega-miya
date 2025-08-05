@@ -16,18 +16,10 @@ from nonebot.params import Depends
 from pydantic import BaseModel
 
 from src.service import OmegaMatcherInterface as OmMI
-from ..omega_global_cache import OmegaGlobalCache
+from .utils import set_context_value, query_context_value
 
 if TYPE_CHECKING:
     from src.service.omega_base.middlewares.models import SentMessageResponse
-
-_MESSAGE_CONTEXT_CACHE_TTL: int = 86400 * 7
-"""消息上下文数据缓存时间"""
-_MESSAGE_CONTEXT_CACHE = OmegaGlobalCache(
-    cache_name='omega_message_context',
-    default_ttl=_MESSAGE_CONTEXT_CACHE_TTL,
-)
-"""消息上下文数据全局缓存"""
 
 
 class MessageContextManager[Data_T: BaseModel]:
@@ -58,12 +50,12 @@ class MessageContextManager[Data_T: BaseModel]:
         else:
             value = self._data_type.model_validate(context_data).model_dump_json()
 
-        await _MESSAGE_CONTEXT_CACHE.save(key=cache_key, value=value, ttl_delta=ttl_delta)
+        await set_context_value(key=cache_key, value=value, ttl_delta=ttl_delta)
         return cache_key
 
     async def get_message_context(self, message_id: int | str, bot_self_id: str) -> Data_T | None:
         cache_key = self.format_interface_event_data_key(message_id=message_id, bot_self_id=bot_self_id)
-        data = await _MESSAGE_CONTEXT_CACHE.load(key=cache_key)
+        data = await query_context_value(key=cache_key)
         return None if not data else self._data_type.model_validate_json(data)
 
     """插件上下文使用的子依赖"""
