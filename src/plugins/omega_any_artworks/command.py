@@ -8,11 +8,13 @@
 @Software       : PyCharm
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 
 from nonebot.log import logger
+from nonebot.params import Depends
 from nonebot.plugin import on_command
 
+from src.service import OmegaMatcherInterface as OmMI
 from src.service import enable_processor_state
 from src.service.artwork_proxy import (
     DanbooruArtworkProxy,
@@ -21,7 +23,7 @@ from src.service.artwork_proxy import (
     PixivArtworkProxy,
     YandereArtworkProxy,
 )
-from src.service.omega_message_context.custom_depends import OPTIONAL_REPLY_ARTWORK_CONTEXT
+from src.service.omega_message_context.custom_depends import OPTIONAL_REPLY_ARTWORK
 from .consts import ALLOW_R18_NODE
 from .handlers import ArtworkHandlerManager
 
@@ -58,9 +60,10 @@ for artwork_proxy_type in __ARTWORK_PROXY_LIST:
         cooldown=60,
     )
 ).handle()
-async def handle_show_artwork(context: OPTIONAL_REPLY_ARTWORK_CONTEXT) -> None:
-    interface, artwork_data = context
-
+async def handle_show_artwork(
+        artwork_data: OPTIONAL_REPLY_ARTWORK,
+        interface: Annotated[OmMI, Depends(OmMI.depend())],
+) -> None:
     if artwork_data is None:
         await interface.finish_reply('回复或引用消息中没有作品信息')
 

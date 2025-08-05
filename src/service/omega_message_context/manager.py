@@ -8,15 +8,12 @@
 @Software       : PyCharm
 """
 
-from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Any
 
-from nonebot.log import logger
-from nonebot.params import Depends
+from nonebot.adapters import Bot as BaseBot
 from pydantic import BaseModel
 
-from src.service import OmegaMatcherInterface as OmMI
-from .utils import set_context_value, query_context_value
+from .utils import OPTIONAL_REPLY_MESSAGE_ID, set_context_value, query_context_value
 
 if TYPE_CHECKING:
     from src.service.omega_base.middlewares.models import SentMessageResponse
@@ -62,24 +59,17 @@ class MessageContextManager[Data_T: BaseModel]:
 
     async def get_reply_context(
             self,
-            interface: Annotated[OmMI, Depends(OmMI.depend())],
-    ) -> AsyncGenerator[tuple[OmMI, Data_T | None], None]:
+            bot: BaseBot,
+            reply_message_id: OPTIONAL_REPLY_MESSAGE_ID,
+    ) -> Data_T | None:
         """子依赖, 获取回复消息的上下文数据"""
-        try:
-            reply_message_id = interface.get_event_reply_msg_id()
-        except Exception as e:
-            logger.warning(f'current event not support reply message, {e}')
-            reply_message_id = None
-
         if reply_message_id is None:
-            context_data = None
-        else:
-            context_data = await self.get_message_context(
-                message_id=reply_message_id,
-                bot_self_id=interface.bot.self_id,
-            )
+            return None
 
-        yield interface, context_data
+        return await self.get_message_context(
+            message_id=reply_message_id,
+            bot_self_id=bot.self_id,
+        )
 
 
 __all__ = [

@@ -24,8 +24,7 @@ from src.service import OmegaMatcherInterface as OmMI
 from src.service import OmegaMessageSegment, OmegaSubscriptionHandlerManager, enable_processor_state
 from src.service.omega_message_context.custom_depends import (
     ARTIST_CONTEXT_MANAGER,
-    OPTIONAL_REPLY_ARTWORK_CONTEXT,
-    OPTIONAL_REPLY_ARTIST_CONTEXT,
+    OPTIONAL_REPLY_ARTIST_OR_ARTWORK_ARTIST,
 )
 from src.utils.pixiv_api import PixivUser
 from .subscription_source import PixivUserSubscriptionManager
@@ -140,33 +139,18 @@ pixiv_artist_artworks = pixiv_artist.command(
 
 
 @pixiv_artist_artworks.handle()
-async def handle_preview_reply_artwork_artist_artworks(
-        context: OPTIONAL_REPLY_ARTWORK_CONTEXT,
-        state: T_State,
-) -> None:
-    interface, artwork_data = context
-    if artwork_data is None:
-        return
-
-    if artwork_data.origin.lower() != 'pixiv':
-        await interface.finish_reply('非 Pixiv 作品来源, 无法获取用户作品信息')
-
-    state['user_id_page_0'] = artwork_data.uid
-
-
-@pixiv_artist_artworks.handle()
 async def handle_preview_reply_artist_artworks(
-        context: OPTIONAL_REPLY_ARTIST_CONTEXT,
+        artist_data: OPTIONAL_REPLY_ARTIST_OR_ARTWORK_ARTIST,
+        interface: Annotated[OmMI, Depends(OmMI.depend())],
         state: T_State,
 ) -> None:
-    interface, user_data = context
-    if user_data is None:
+    if artist_data is None:
         return
 
-    if user_data.origin.lower() != 'pixiv':
+    if artist_data.origin.lower() != 'pixiv':
         await interface.finish_reply('非 Pixiv 用户来源, 无法获取用户作品信息')
 
-    state['user_id_page_0'] = user_data.uid
+    state['user_id_page_0'] = artist_data.uid
 
 
 @pixiv_artist_artworks.got('user_id_page_0', prompt='请输入用户的UID:')
@@ -213,33 +197,18 @@ pixiv_artist_bookmark = pixiv_artist.command(
 
 
 @pixiv_artist_bookmark.handle()
-async def handle_preview_reply_artwork_user_bookmark(
-        context: OPTIONAL_REPLY_ARTWORK_CONTEXT,
-        state: T_State,
-) -> None:
-    interface, artwork_data = context
-    if artwork_data is None:
-        return
-
-    if artwork_data.origin.lower() != 'pixiv':
-        await interface.finish_reply('非 Pixiv 作品来源, 无法获取用户作品信息')
-
-    state['user_id_page_0'] = artwork_data.uid
-
-
-@pixiv_artist_bookmark.handle()
 async def handle_preview_reply_user_bookmark(
-        context: OPTIONAL_REPLY_ARTIST_CONTEXT,
+        artist_data: OPTIONAL_REPLY_ARTIST_OR_ARTWORK_ARTIST,
+        interface: Annotated[OmMI, Depends(OmMI.depend())],
         state: T_State,
 ) -> None:
-    interface, user_data = context
-    if user_data is None:
+    if artist_data is None:
         return
 
-    if user_data.origin.lower() != 'pixiv':
+    if artist_data.origin.lower() != 'pixiv':
         await interface.finish_reply('非 Pixiv 用户来源, 无法获取用户作品信息')
 
-    state['user_id_page_0'] = user_data.uid
+    state['user_id_page_0'] = artist_data.uid
 
 
 @pixiv_artist_bookmark.handle()
