@@ -14,7 +14,8 @@ from nonebot.log import logger
 from nonebot.params import ArgStr, Depends
 
 from src.params.handler import get_command_str_single_arg_parser_handler
-from src.service import OmegaMatcherInterface as OmMI, OmegaMessageSegment, OmegaSubscriptionHandlerManager
+from src.service import OmegaMatcherInterface as OmMI
+from src.service import OmegaMessageSegment, OmegaSubscriptionHandlerManager
 from .subscription_source import PixivisionSubscriptionManager
 
 _pixivision_handler_manager = OmegaSubscriptionHandlerManager(
