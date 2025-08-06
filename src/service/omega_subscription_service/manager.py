@@ -17,13 +17,9 @@ from nonebot.log import logger
 from sqlalchemy.exc import NoResultFound
 
 from src.database import EntityDAL, SocialMediaContentDAL, SubscriptionSourceDAL, begin_db_session
-from src.service import (
-    OmegaEntity,
-    OmegaEntityInterface as OmEI,
-    OmegaMatcherInterface as OmMI,
-    OmegaMessage,
-    OmegaMessageSegment,
-)
+from src.service import OmegaEntity, OmegaMessage, OmegaMessageSegment
+from src.service import OmegaEntityInterface as OmEI
+from src.service import OmegaMatcherInterface as OmMI
 from src.utils import semaphore_gather
 
 if TYPE_CHECKING:
@@ -289,7 +285,6 @@ class BaseSubscriptionManager[SMC_T: Any](abc.ABC):
 
     async def _entity_message_send_postprocessor(self, response: 'SentMessageResponse', smc_item: 'SMC_T') -> None:
         """向 Entity 发送消息的后处理"""
-        pass
 
     async def _send_entity_message(self, entity: 'Entity', message: str | OmegaMessage, smc_item: 'SMC_T') -> None:
         """向 Entity 发送消息"""

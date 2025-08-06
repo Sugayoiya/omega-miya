@@ -12,7 +12,7 @@ from fastapi import HTTPException
 from fastapi.responses import FileResponse
 from nonebot.log import logger
 
-from src.resource import AnyResource, BaseResourceHostProtocol, BaseResource
+from src.resource import AnyResource, BaseResource, BaseResourceHostProtocol
 from .config import file_host_config
 from .utils import query_file_path, query_file_uuid
 from ..omega_api import OmegaAPI
@@ -32,11 +32,11 @@ if file_host_config.omega_file_host_enable_hosting_service:
         file_path = await query_file_path(file_id)
 
         if not file_path:
-            raise HTTPException(status_code=404, detail="File expired or deleted")
+            raise HTTPException(status_code=404, detail='File expired or deleted')
 
         file = AnyResource(file_path)
         if not file.is_file:
-            raise HTTPException(status_code=404, detail="File not found")
+            raise HTTPException(status_code=404, detail='File not found')
 
         return FileResponse(
             path=file.path,

@@ -31,7 +31,7 @@ if short_link_config.omega_short_link_enable_http_forward_service:
         url = await query_short_link_url(uuid)
 
         if not url:
-            raise HTTPException(status_code=404, detail="Short link expired or deleted")
+            raise HTTPException(status_code=404, detail='Short link expired or deleted')
 
         return RedirectResponse(url=url, status_code=307)
 

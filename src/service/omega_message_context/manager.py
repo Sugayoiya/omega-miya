@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 from nonebot.adapters import Bot as BaseBot
 from pydantic import BaseModel
 
-from .utils import OPTIONAL_REPLY_MESSAGE_ID, set_context_value, query_context_value
+from .utils import OPTIONAL_REPLY_MESSAGE_ID, query_context_value, set_context_value
 
 if TYPE_CHECKING:
     from src.service.omega_base.middlewares.models import SentMessageResponse
