@@ -14,7 +14,7 @@ from collections.abc import AsyncGenerator, Callable, Coroutine
 from contextlib import asynccontextmanager
 from functools import wraps
 from types import TracebackType
-from typing import TYPE_CHECKING, Annotated, Concatenate, NoReturn, Self
+from typing import TYPE_CHECKING, Annotated, Any, Concatenate, NoReturn, Self
 
 from nonebot.adapters import Bot as BaseBot
 from nonebot.adapters import Event as BaseEvent
@@ -335,6 +335,14 @@ class OmegaMatcherInterface:
         return await self.get_event_depend().send_reply(message=message, **kwargs)
 
     @check_adapter_implemented
+    async def revoke_bot_sent_msg(self, sent_return: 'SentMessageResponse', **revoke_kwargs) -> Any:
+        return await self.get_event_depend().revoke_bot_sent_msg(sent_return=sent_return, **revoke_kwargs)
+
+    @check_adapter_implemented
+    async def revoke_current_session_msg(self, message_id: int | str, **revoke_kwargs) -> Any:
+        return await self.get_event_depend().revoke_current_session_msg(message_id=message_id, **revoke_kwargs)
+
+    @check_adapter_implemented
     async def send_auto_revoke(
             self,
             message: 'SentOmegaMessage',
@@ -347,7 +355,7 @@ class OmegaMatcherInterface:
         loop = asyncio.get_running_loop()
         return sent_return, loop.call_later(
             revoke_interval,
-            lambda: loop.create_task(self.get_event_depend().revoke(sent_return=sent_return, **revoke_kwargs)),
+            lambda: loop.create_task(self.revoke_bot_sent_msg(sent_return=sent_return, **revoke_kwargs)),
         )
 
     @check_adapter_implemented
@@ -363,7 +371,7 @@ class OmegaMatcherInterface:
         loop = asyncio.get_running_loop()
         return sent_return, loop.call_later(
             revoke_interval,
-            lambda: loop.create_task(self.get_event_depend().revoke(sent_return=sent_return, **revoke_kwargs)),
+            lambda: loop.create_task(self.revoke_bot_sent_msg(sent_return=sent_return, **revoke_kwargs)),
         )
 
     @check_adapter_implemented

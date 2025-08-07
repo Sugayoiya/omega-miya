@@ -224,7 +224,10 @@ class TelegramEventDepend[Event_T: TelegramEvent](BaseEventDepend[TelegramBot, E
     async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         raise NotImplementedError
 
-    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+    async def revoke_bot_sent_msg(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+        raise NotImplementedError
+
+    async def revoke_current_session_msg(self, message_id: int | str, **kwargs) -> Any:
         raise NotImplementedError
 
     def get_user_nickname(self) -> str:
@@ -271,12 +274,19 @@ class TelegramMessageEventDepend[Event_T: TelegramMessageEvent](TelegramEventDep
     async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         return await self.send(message=message, reply_to_message_id=self.event.message_id, **kwargs)
 
-    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+    async def revoke_bot_sent_msg(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
         if sent_return.extra_sent_message_ids:
             message_ids = [int(x) for x in (sent_return.sent_message_id, *sent_return.extra_sent_message_ids)]
+            await self.bot.delete_messages(chat_id=sent_return.target_id, message_ids=message_ids)
+        else:
+            await self.bot.delete_message(chat_id=sent_return.target_id, message_id=int(sent_return.sent_message_id))
+
+    async def revoke_current_session_msg(self, message_id: int | str, **kwargs) -> Any:
+        if isinstance(message_id, str):
+            message_ids = [int(x) for x in message_id.split(',') if x.isdigit()]
             await self.bot.delete_messages(chat_id=self.event.chat.id, message_ids=message_ids)
         else:
-            await self.bot.delete_message(chat_id=self.event.chat.id, message_id=int(sent_return.sent_message_id))
+            await self.bot.delete_message(chat_id=self.event.chat.id, message_id=message_id)
 
     def get_user_nickname(self) -> str:
         return self.event.chat.username if self.event.chat.username else ''

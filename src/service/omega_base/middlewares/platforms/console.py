@@ -131,7 +131,10 @@ class ConsoleEventDepend[Event_T: ConsoleEvent](BaseEventDepend[ConsoleBot, Even
     async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         raise NotImplementedError
 
-    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+    async def revoke_bot_sent_msg(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+        raise NotImplementedError
+
+    async def revoke_current_session_msg(self, message_id: int | str, **kwargs) -> Any:
         raise NotImplementedError
 
     def get_user_nickname(self) -> str:

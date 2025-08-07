@@ -104,10 +104,20 @@ class BaseEventDepend[Bot_T: 'BaseBot', Event_T: 'BaseEvent', Message_T: 'BaseMe
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
-        """撤回/删除一条已发送的消息
+    async def revoke_bot_sent_msg(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+        """撤回/删除一条由 Bot 发送的消息
 
         :param sent_return: bot.send() 的返回值
+        :param kwargs: 其他参数
+        :return: 调用平台撤回/删除消息的返回值
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    async def revoke_current_session_msg(self, message_id: int | str, **kwargs) -> Any:
+        """撤回/删除一条当前会话中的任意的消息
+
+        :param message_id: 消息 ID
         :param kwargs: 其他参数
         :return: 调用平台撤回/删除消息的返回值
         """

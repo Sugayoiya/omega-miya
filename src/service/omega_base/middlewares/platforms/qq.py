@@ -330,7 +330,10 @@ class QQEventDepend[Event_T: QQEvent](BaseEventDepend[QQBot, Event_T, QQMessage]
     async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         raise NotImplementedError
 
-    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+    async def revoke_bot_sent_msg(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+        raise NotImplementedError
+
+    async def revoke_current_session_msg(self, message_id: int | str, **kwargs) -> Any:
         raise NotImplementedError
 
     def get_user_nickname(self) -> str:
@@ -388,10 +391,16 @@ class QQGuildMessageEventDepend(QQEventDepend[QQGuildMessageEvent]):
         send_message = QQMessageSegment.reference(reference=MessageReference(message_id=self.event.id)) + built_message
         return await self.bot.send(event=self.event, message=send_message, **kwargs)
 
-    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+    async def revoke_bot_sent_msg(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
         return await self.bot.delete_message(
             channel_id=sent_return.target_id,
             message_id=sent_return.sent_message_id,
+        )
+
+    async def revoke_current_session_msg(self, message_id: int | str, **kwargs) -> Any:
+        return await self.bot.delete_message(
+            channel_id=self.event.channel_id,
+            message_id=str(message_id),
         )
 
     def get_user_nickname(self) -> str:
@@ -466,10 +475,16 @@ class QQC2CMessageCreateEventDepend(QQEventDepend[QQC2CMessageCreateEvent]):
         send_message = QQMessageSegment.reference(reference=MessageReference(message_id=self.event.id)) + built_message
         return await self.bot.send(event=self.event, message=send_message, **kwargs)
 
-    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+    async def revoke_bot_sent_msg(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
         return await self.bot.delete_c2c_message(
             openid=sent_return.target_id,
             message_id=sent_return.sent_message_id,
+        )
+
+    async def revoke_current_session_msg(self, message_id: int | str, **kwargs) -> Any:
+        return await self.bot.delete_c2c_message(
+            openid=self.event.author.user_openid,
+            message_id=str(message_id),
         )
 
     def get_user_nickname(self) -> str:
@@ -532,10 +547,16 @@ class QQGroupAtMessageCreateEventDepend(QQEventDepend[QQGroupAtMessageCreateEven
         send_message = QQMessageSegment.reference(reference=MessageReference(message_id=self.event.id)) + built_message
         return await self.bot.send(event=self.event, message=send_message, **kwargs)
 
-    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+    async def revoke_bot_sent_msg(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
         return await self.bot.delete_group_message(
             group_openid=sent_return.target_id,
             message_id=sent_return.sent_message_id,
+        )
+
+    async def revoke_current_session_msg(self, message_id: int | str, **kwargs) -> Any:
+        return await self.bot.delete_group_message(
+            group_openid=self.event.author.member_openid,
+            message_id=str(message_id),
         )
 
     def get_user_nickname(self) -> str:

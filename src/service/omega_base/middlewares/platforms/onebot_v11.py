@@ -322,7 +322,10 @@ class OneBotV11EventDepend[Event_T: OneBotV11Event](BaseEventDepend[OneBotV11Bot
     async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         raise NotImplementedError
 
-    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+    async def revoke_bot_sent_msg(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+        raise NotImplementedError
+
+    async def revoke_current_session_msg(self, message_id: int | str, **kwargs) -> Any:
         raise NotImplementedError
 
     def get_user_nickname(self) -> str:
@@ -397,8 +400,11 @@ class OneBotV11MessageEventDepend[Event_T: OneBotV11MessageEvent](OneBotV11Event
     async def send_reply(self, message: 'BaseSentMessageType[OmegaMessage]', **kwargs) -> 'SentMessageResponse':
         return await self.send(message=message, reply_message=True, **kwargs)
 
-    async def revoke(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
+    async def revoke_bot_sent_msg(self, sent_return: 'SentMessageResponse', **kwargs) -> Any:
         return await self.bot.delete_msg(message_id=int(sent_return.sent_message_id))
+
+    async def revoke_current_session_msg(self, message_id: int | str, **kwargs) -> Any:
+        return await self.bot.delete_msg(message_id=int(message_id))
 
     def get_user_nickname(self) -> str:
         nickname = self.event.sender.card if self.event.sender.card else self.event.sender.nickname
