@@ -216,9 +216,9 @@ class OmegaRequests:
 
     def set_timeout(
             self,
-            total: Optional[float],
-            connect: Optional[float],
-            read: Optional[float],
+            total: float | None,
+            connect: float | None,
+            read: float | None,
     ) -> None:
         self.timeout = Timeout(total=total, connect=connect, read=read)
 

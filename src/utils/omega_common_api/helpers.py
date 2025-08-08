@@ -8,8 +8,9 @@
 @Software       : PyCharm
 """
 
+from collections.abc import Generator
 from http.cookiejar import CookieJar
-from typing import TYPE_CHECKING, Generator
+from typing import TYPE_CHECKING
 
 from multidict import CIMultiDict
 from nonebot.internal.driver import Cookies as Cookies

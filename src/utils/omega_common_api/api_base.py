@@ -97,9 +97,9 @@ class BaseCommonAPI(abc.ABC):
         if cls._load_cloudflare_clearance():
             domain_cloudflare_clearance = cloudflare_clearance_config.get_url_config(url=cls._get_root_url())
             if domain_cloudflare_clearance is not None:
-                headers = {k: v for k, v in iter_headers_types_item(headers)}
+                headers = dict(iter_headers_types_item(headers))
                 headers.update(domain_cloudflare_clearance.get_headers())
-                cookies = {k: v for k, v in iter_cookies_types_item(cookies)}
+                cookies = dict(iter_cookies_types_item(cookies))
                 cookies.update(domain_cloudflare_clearance.get_cookies())
 
         return OmegaRequests(headers=headers, cookies=cookies, timeout=timeout)
