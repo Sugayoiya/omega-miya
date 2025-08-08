@@ -11,10 +11,11 @@
 from asyncio import current_task
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, Annotated
 
 from nonebot import get_driver, logger
 from nonebot.matcher import current_event, current_matcher
+from nonebot.params import Depends
 from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session
 
 from .connector import async_session_factory, engine
@@ -83,7 +84,12 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
+type DATABASE_SESSION = Annotated[AsyncSession, Depends(get_db_session)]
+"""子依赖: 获取数据库 session 并开始事务"""
+
+
 __all__ = [
+    'DATABASE_SESSION',
     'begin_db_session',
     'get_db_session',
 ]
