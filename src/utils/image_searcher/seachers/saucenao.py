@@ -218,7 +218,7 @@ class Saucenao(BaseImageSearcherAPI):
             if image_searcher_config.image_searcher_saucenao_api_key:
                 params.update({'api_key': image_searcher_config.image_searcher_saucenao_api_key})
 
-            result = await cls._post_json(cls.get_api_url(), params=params, files=files)  # type: ignore
+            result = await cls._post_acquire_as_json(cls.get_api_url(), params=params, files=files)  # type: ignore
 
         return cls._parse_saucenao_result(saucenao_result=SaucenaoResult.model_validate(result))
 
@@ -235,7 +235,7 @@ class Saucenao(BaseImageSearcherAPI):
         if image_searcher_config.image_searcher_saucenao_api_key:
             params.update({'api_key': image_searcher_config.image_searcher_saucenao_api_key})
 
-        result = await cls._post_json(cls.get_api_url(), params=params, files=files)  # type: ignore
+        result = await cls._post_acquire_as_json(cls.get_api_url(), params=params, files=files)  # type: ignore
         return cls._parse_saucenao_result(saucenao_result=SaucenaoResult.model_validate(result))
 
     @classmethod
@@ -249,7 +249,7 @@ class Saucenao(BaseImageSearcherAPI):
         if image_searcher_config.image_searcher_saucenao_api_key:
             params.update({'api_key': image_searcher_config.image_searcher_saucenao_api_key})
 
-        result = await cls._get_json(cls.get_api_url(), params=params)
+        result = await cls._get_resource_as_json(cls.get_api_url(), params=params)
         return cls._parse_saucenao_result(saucenao_result=SaucenaoResult.model_validate(result))
 
 

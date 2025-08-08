@@ -8,7 +8,7 @@
 @Software       : PyCharm
 """
 
-from .chat import ChatCompletion
+from .chat import ChatCompletion, ChatCompletionChunk
 from .embeddings import Embeddings
 from .file import File, FileContent, FileDeleted, FileList
 from .message import Message, MessageContent, MessageRole
@@ -16,6 +16,7 @@ from .model import Model, ModelList
 
 __all__ = [
     'ChatCompletion',
+    'ChatCompletionChunk',
     'Embeddings',
     'File',
     'FileContent',

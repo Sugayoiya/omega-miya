@@ -65,7 +65,7 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
     def _get_default_cookies(cls) -> 'CookieTypes':
         return None
 
-    async def get_json(
+    async def get_resource_as_json(
             self,
             url: str,
             params: dict[str, Any] | None = None,
@@ -76,7 +76,7 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         else:
             params = self._auth_params
 
-        return await self._get_json(url, params)
+        return await self._get_resource_as_json(url, params)
 
     async def get_resource_as_bytes(
             self,
@@ -129,19 +129,19 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/artists.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[Artist], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[Artist], await self.get_resource_as_json(url=index_url, params=params))
 
     async def artists_index_banned(self) -> list[Artist]:
         """Show banned artists index"""
         index_url = f'{self._get_root_url()}/artists/banned.json'
 
-        return parse_obj_as(list[Artist], await self.get_json(url=index_url))
+        return parse_obj_as(list[Artist], await self.get_resource_as_json(url=index_url))
 
     async def artist_show(self, id_: int) -> Artist:
         """Show artist data"""
         url = f'{self._get_root_url()}/artists/{id_}.json'
 
-        return Artist.model_validate(await self.get_json(url=url))
+        return Artist.model_validate(await self.get_resource_as_json(url=url))
 
     """Versioned Type: Artist Commentary"""
 
@@ -156,13 +156,13 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/artist_commentaries.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[ArtistCommentary], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[ArtistCommentary], await self.get_resource_as_json(url=index_url, params=params))
 
     async def artist_commentary_show(self, id_: int) -> ArtistCommentary:
         """Show artist commentary data"""
         url = f'{self._get_root_url()}/artist_commentaries/{id_}.json'
 
-        return ArtistCommentary.model_validate(await self.get_json(url=url))
+        return ArtistCommentary.model_validate(await self.get_resource_as_json(url=url))
 
     """Versioned Type: Note"""
 
@@ -177,13 +177,13 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/notes.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[Note], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[Note], await self.get_resource_as_json(url=index_url, params=params))
 
     async def note_show(self, id_: int) -> Note:
         """Show note data"""
         url = f'{self._get_root_url()}/notes/{id_}.json'
 
-        return Note.model_validate(await self.get_json(url=url))
+        return Note.model_validate(await self.get_resource_as_json(url=url))
 
     """Versioned Type: Pool"""
 
@@ -198,13 +198,13 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/pools.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[Pool], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[Pool], await self.get_resource_as_json(url=index_url, params=params))
 
     async def pool_show(self, id_: int) -> Pool:
         """Show pool data"""
         url = f'{self._get_root_url()}/pools/{id_}.json'
 
-        return Pool.model_validate(await self.get_json(url=url))
+        return Pool.model_validate(await self.get_resource_as_json(url=url))
 
     """Versioned Type: Post"""
 
@@ -219,50 +219,50 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/posts.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[Post], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[Post], await self.get_resource_as_json(url=index_url, params=params))
 
     async def explore_popular_posts(self) -> list[Post]:
         index_url = f'{self._get_root_url()}/explore/posts/popular.json'
 
-        return parse_obj_as(list[Post], await self.get_json(url=index_url))
+        return parse_obj_as(list[Post], await self.get_resource_as_json(url=index_url))
 
     async def explore_curated_posts(self) -> list[Post]:
         index_url = f'{self._get_root_url()}/explore/posts/curated.json'
 
-        return parse_obj_as(list[Post], await self.get_json(url=index_url))
+        return parse_obj_as(list[Post], await self.get_resource_as_json(url=index_url))
 
     async def explore_viewed_posts(self) -> list[Post]:
         index_url = f'{self._get_root_url()}/explore/posts/viewed.json'
 
-        return parse_obj_as(list[Post], await self.get_json(url=index_url))
+        return parse_obj_as(list[Post], await self.get_resource_as_json(url=index_url))
 
     async def explore_searches_posts(self) -> list[tuple[str, float]]:
         index_url = f'{self._get_root_url()}/explore/posts/searches.json'
 
-        return parse_obj_as(list[tuple[str, float]], await self.get_json(url=index_url))
+        return parse_obj_as(list[tuple[str, float]], await self.get_resource_as_json(url=index_url))
 
     async def explore_missed_searches_posts(self) -> list[tuple[str, float]]:
         index_url = f'{self._get_root_url()}/explore/posts/missed_searches.json'
 
-        return parse_obj_as(list[tuple[str, float]], await self.get_json(url=index_url))
+        return parse_obj_as(list[tuple[str, float]], await self.get_resource_as_json(url=index_url))
 
     async def post_random(self) -> Post:
         """Show random post data"""
         url = f'{self._get_root_url()}/posts/random.json'
 
-        return Post.model_validate(await self.get_json(url=url))
+        return Post.model_validate(await self.get_resource_as_json(url=url))
 
     async def post_show(self, id_: int) -> Post:
         """Show post data"""
         url = f'{self._get_root_url()}/posts/{id_}.json'
 
-        return Post.model_validate(await self.get_json(url=url))
+        return Post.model_validate(await self.get_resource_as_json(url=url))
 
     async def post_show_artist_commentary(self, id_: int) -> ArtistCommentary:
         """Show post's artists commentaries"""
         url = f'{self._get_root_url()}/posts/{id_}/artist_commentary.json'
 
-        return ArtistCommentary.model_validate(await self.get_json(url=url))
+        return ArtistCommentary.model_validate(await self.get_resource_as_json(url=url))
 
     """Versioned Type: Wiki"""
 
@@ -277,13 +277,13 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/wiki_pages.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[Wiki], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[Wiki], await self.get_resource_as_json(url=index_url, params=params))
 
     async def wiki_show(self, id_: int) -> Wiki:
         """Show wiki data"""
         url = f'{self._get_root_url()}/wiki_pages/{id_}.json'
 
-        return Wiki.model_validate(await self.get_json(url=url))
+        return Wiki.model_validate(await self.get_resource_as_json(url=url))
 
     """Type Version: ArtistVersion"""
 
@@ -298,13 +298,13 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/artist_versions.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[ArtistVersion], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[ArtistVersion], await self.get_resource_as_json(url=index_url, params=params))
 
     async def artist_version_show(self, id_: int) -> ArtistVersion:
         """Show artist version data"""
         url = f'{self._get_root_url()}/artist_versions/{id_}.json'
 
-        return ArtistVersion.model_validate(await self.get_json(url=url))
+        return ArtistVersion.model_validate(await self.get_resource_as_json(url=url))
 
     """Type Version: ArtistCommentaryVersion"""
 
@@ -319,13 +319,14 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/artist_commentary_versions.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[ArtistCommentaryVersion], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[ArtistCommentaryVersion],
+                            await self.get_resource_as_json(url=index_url, params=params))
 
     async def artist_commentary_version_show(self, id_: int) -> ArtistCommentaryVersion:
         """Show artist commentary version data"""
         url = f'{self._get_root_url()}/artist_commentary_versions/{id_}.json'
 
-        return ArtistCommentaryVersion.model_validate(await self.get_json(url=url))
+        return ArtistCommentaryVersion.model_validate(await self.get_resource_as_json(url=url))
 
     """Type Version: NoteVersion"""
 
@@ -340,13 +341,13 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/note_versions.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[NoteVersion], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[NoteVersion], await self.get_resource_as_json(url=index_url, params=params))
 
     async def note_version_show(self, id_: int) -> NoteVersion:
         """Show note version data"""
         url = f'{self._get_root_url()}/note_versions/{id_}.json'
 
-        return NoteVersion.model_validate(await self.get_json(url=url))
+        return NoteVersion.model_validate(await self.get_resource_as_json(url=url))
 
     """Type Version: PoolVersion"""
 
@@ -361,7 +362,7 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/pool_versions.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[PoolVersion], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[PoolVersion], await self.get_resource_as_json(url=index_url, params=params))
 
     """Type Version: PostVersion"""
 
@@ -376,7 +377,7 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/post_versions.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[PostVersion], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[PostVersion], await self.get_resource_as_json(url=index_url, params=params))
 
     """Type Version: WikiPageVersion"""
 
@@ -391,7 +392,7 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/wiki_page_versions.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[WikiPageVersion], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[WikiPageVersion], await self.get_resource_as_json(url=index_url, params=params))
 
     """Non-versioned Type: Comment"""
 
@@ -406,13 +407,13 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/comments.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[Comment], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[Comment], await self.get_resource_as_json(url=index_url, params=params))
 
     async def comment_show(self, id_: int) -> Comment:
         """Show comment data"""
         url = f'{self._get_root_url()}/comments/{id_}.json'
 
-        return Comment.model_validate(await self.get_json(url=url))
+        return Comment.model_validate(await self.get_resource_as_json(url=url))
 
     """Non-versioned Type: Dmail"""
 
@@ -427,14 +428,14 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/dmails.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[Dmail], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[Dmail], await self.get_resource_as_json(url=index_url, params=params))
 
     async def dmail_show(self, id_: int, key: str | None = None) -> Dmail:
         """Show dmail data"""
         url = f'{self._get_root_url()}/dmails/{id_}.json'
 
         params = {'key': key} if key is not None else None
-        return Dmail.model_validate(await self.get_json(url=url, params=params))
+        return Dmail.model_validate(await self.get_resource_as_json(url=url, params=params))
 
     """Non-versioned Type: ForumPost"""
 
@@ -449,13 +450,13 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/forum_posts.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[ForumPost], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[ForumPost], await self.get_resource_as_json(url=index_url, params=params))
 
     async def forum_post_show(self, id_: int) -> ForumPost:
         """Show forum post data"""
         url = f'{self._get_root_url()}/forum_posts/{id_}.json'
 
-        return ForumPost.model_validate(await self.get_json(url=url))
+        return ForumPost.model_validate(await self.get_resource_as_json(url=url))
 
     """Non-versioned Type: ForumTopic"""
 
@@ -470,13 +471,13 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/forum_topics.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[ForumTopic], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[ForumTopic], await self.get_resource_as_json(url=index_url, params=params))
 
     async def forum_topic_show(self, id_: int) -> ForumTopic:
         """Show forum topic data"""
         url = f'{self._get_root_url()}/forum_topics/{id_}.json'
 
-        return ForumTopic.model_validate(await self.get_json(url=url))
+        return ForumTopic.model_validate(await self.get_resource_as_json(url=url))
 
     """Non-versioned Type: PostAppeal"""
 
@@ -491,13 +492,13 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/post_appeals.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[PostAppeal], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[PostAppeal], await self.get_resource_as_json(url=index_url, params=params))
 
     async def post_appeal_show(self, id_: int) -> PostAppeal:
         """Show post appeal data"""
         url = f'{self._get_root_url()}/post_appeals/{id_}.json'
 
-        return PostAppeal.model_validate(await self.get_json(url=url))
+        return PostAppeal.model_validate(await self.get_resource_as_json(url=url))
 
     """Non-versioned Type: PostFlag"""
 
@@ -512,13 +513,13 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/post_flags.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[PostFlag], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[PostFlag], await self.get_resource_as_json(url=index_url, params=params))
 
     async def post_flag_show(self, id_: int) -> PostFlag:
         """Show post flag data"""
         url = f'{self._get_root_url()}/post_flags/{id_}.json'
 
-        return PostFlag.model_validate(await self.get_json(url=url))
+        return PostFlag.model_validate(await self.get_resource_as_json(url=url))
 
     """Non-versioned Type: Tag"""
 
@@ -533,13 +534,13 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/tags.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[Tag], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[Tag], await self.get_resource_as_json(url=index_url, params=params))
 
     async def tag_show(self, id_: int) -> Tag:
         """Show tag data"""
         url = f'{self._get_root_url()}/tags/{id_}.json'
 
-        return Tag.model_validate(await self.get_json(url=url))
+        return Tag.model_validate(await self.get_resource_as_json(url=url))
 
     """Non-versioned Type: TagAlias"""
 
@@ -554,13 +555,13 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/tag_aliases.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[TagAlias], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[TagAlias], await self.get_resource_as_json(url=index_url, params=params))
 
     async def tag_alias_show(self, id_: int) -> TagAlias:
         """Show tag alias data"""
         url = f'{self._get_root_url()}/tag_aliases/{id_}.json'
 
-        return TagAlias.model_validate(await self.get_json(url=url))
+        return TagAlias.model_validate(await self.get_resource_as_json(url=url))
 
     """Non-versioned Type: TagImplication"""
 
@@ -575,13 +576,13 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/tag_implications.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[TagImplication], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[TagImplication], await self.get_resource_as_json(url=index_url, params=params))
 
     async def tag_implication_show(self, id_: int) -> TagImplication:
         """Show tag implication data"""
         url = f'{self._get_root_url()}/tag_implications/{id_}.json'
 
-        return TagImplication.model_validate(await self.get_json(url=url))
+        return TagImplication.model_validate(await self.get_resource_as_json(url=url))
 
     """Non-versioned Type: Upload"""
 
@@ -596,13 +597,13 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/uploads.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[Upload], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[Upload], await self.get_resource_as_json(url=index_url, params=params))
 
     async def upload_show(self, id_: int) -> Upload:
         """Show upload data"""
         url = f'{self._get_root_url()}/uploads/{id_}.json'
 
-        return Upload.model_validate(await self.get_json(url=url))
+        return Upload.model_validate(await self.get_resource_as_json(url=url))
 
     """Non-versioned Type: User"""
 
@@ -617,19 +618,19 @@ class BaseDanbooruAPI(BaseCommonAPI, abc.ABC):
         index_url = f'{self._get_root_url()}/users.json'
 
         params = self.generate_common_search_params(page=page, limit=limit, **search_kwargs)
-        return parse_obj_as(list[User], await self.get_json(url=index_url, params=params))
+        return parse_obj_as(list[User], await self.get_resource_as_json(url=index_url, params=params))
 
     async def user_profile(self) -> User:
         """Get profile"""
         url = f'{self._get_root_url()}/profile.json'
 
-        return User.model_validate(await self.get_json(url=url))
+        return User.model_validate(await self.get_resource_as_json(url=url))
 
     async def user_show(self, id_: int) -> User:
         """Show user data"""
         url = f'{self._get_root_url()}/users/{id_}.json'
 
-        return User.model_validate(await self.get_json(url=url))
+        return User.model_validate(await self.get_resource_as_json(url=url))
 
 
 class DanbooruAPI(BaseDanbooruAPI):

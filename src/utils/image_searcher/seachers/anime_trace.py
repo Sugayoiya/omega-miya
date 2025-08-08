@@ -81,7 +81,9 @@ class AnimeTrace(BaseImageSearcherAPI):
                 'model': image_searcher_config.image_searcher_anime_trace_default_model,
                 'ai_detect': '1' if image_searcher_config.image_searcher_anime_trace_enable_ai_detect else '2',
             }
-            result = await cls._post_json(url=cls._get_root_url(), data=data, files=files, timeout=20)  # type: ignore
+            result = await cls._post_acquire_as_json(
+                url=cls._get_root_url(), data=data, files=files, timeout=20,  # type: ignore
+            )
 
         return AnimeTraceResult.model_validate(result)
 
@@ -95,7 +97,9 @@ class AnimeTrace(BaseImageSearcherAPI):
             'model': image_searcher_config.image_searcher_anime_trace_default_model,
             'ai_detect': '1' if image_searcher_config.image_searcher_anime_trace_enable_ai_detect else '2',
         }
-        result = await cls._post_json(url=cls._get_root_url(), data=data, files=files, timeout=20)  # type: ignore
+        result = await cls._post_acquire_as_json(
+            url=cls._get_root_url(), data=data, files=files, timeout=20,  # type: ignore
+        )
         return AnimeTraceResult.model_validate(result)
 
     @classmethod

@@ -13,7 +13,7 @@ from typing import Any, Literal
 from pydantic import Field, field_validator
 
 from .base import BaseOpenAIModel
-from .message import MessageContent
+from .message import MessageContent, MessageRole
 
 
 class Choice(BaseOpenAIModel):
@@ -29,6 +29,39 @@ class Choice(BaseOpenAIModel):
         'insufficient_system_resource',
         'not_provided',
     ] = Field(default='not_provided')
+
+    @field_validator('finish_reason', mode='before')
+    @classmethod
+    def _enforce_no_null_finish_reason(cls, value: Any) -> Any:
+        if value is None:
+            return 'not_provided'
+        else:
+            return value
+
+
+class ChunkChoice(BaseOpenAIModel):
+    index: int
+    delta: MessageContent
+    finish_reason: Literal[
+        'stop',
+        'eos',
+        'length',
+        'content_filter',
+        'tool_calls',
+        'function_call',
+        'insufficient_system_resource',
+        'not_provided',
+    ] = Field(default='not_provided')
+
+    @field_validator('delta', mode='before')
+    @classmethod
+    def _complement_delta_role(cls, value: Any) -> Any:
+        try:
+            value['role']
+        except KeyError:
+            value['role'] = MessageRole.assistant
+
+        return value
 
     @field_validator('finish_reason', mode='before')
     @classmethod
@@ -68,6 +101,18 @@ class ChatCompletion(BaseOpenAIModel):
     system_fingerprint: str | None = None
 
 
+class ChatCompletionChunk(BaseOpenAIModel):
+    id: str
+    object: Literal['chat.completion.chunk']
+    created: int
+    model: str
+    choices: list[ChunkChoice]
+    usage: Usage | None = None
+    service_tier: str | None = None
+    system_fingerprint: str | None = None
+
+
 __all__ = [
     'ChatCompletion',
+    'ChatCompletionChunk',
 ]

@@ -32,14 +32,14 @@ class BilibiliUser(BilibiliCommon):
     async def query_my_account_info(cls) -> Account:
         """获取我的信息"""
         url = 'https://api.bilibili.com/x/member/web/account'
-        data = await cls._get_json(url=url)
+        data = await cls._get_resource_as_json(url=url)
         return Account.model_validate(data)
 
     @classmethod
     async def query_my_vip_info(cls) -> VipInfo:
         """查询我的大会员状态"""
         url = 'https://api.bilibili.com/x/vip/web/user/info'
-        data = await cls._get_json(url=url)
+        data = await cls._get_resource_as_json(url=url)
         return VipInfo.model_validate(data)
 
     @staticmethod
@@ -68,7 +68,7 @@ class BilibiliUser(BilibiliCommon):
         except Exception as e:
             logger.opt(colors=True).error(f'<lc>Bilibili</lc> | 获取用户 {mid} RENDER_DATA 失败, {e}')
         signed_params = await cls.sign_wbi_params(params=params)
-        data = await cls._get_json(url=url, params=signed_params)
+        data = await cls._get_resource_as_json(url=url, params=signed_params)
         return User.model_validate(data)
 
     @classmethod

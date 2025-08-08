@@ -79,7 +79,7 @@ class BilibiliCommon(BaseCommonAPI):
         """立即从 nav 接口请求参数进行 wbi 签名"""
         _wbi_nav_url: str = 'https://api.bilibili.com/x/web-interface/nav'
 
-        response = await cls._get_json(url=_wbi_nav_url)
+        response = await cls._get_resource_as_json(url=_wbi_nav_url)
         return sign_wbi_params_nav(nav_data=WebInterfaceNav.model_validate(response), params=params)
 
     @classmethod
@@ -99,7 +99,7 @@ class BilibiliCommon(BaseCommonAPI):
         _ticket_url: str = 'https://api.bilibili.com/bapis/bilibili.api.ticket.v1.Ticket/GenWebTicket'
         params = create_gen_web_ticket_params(bili_jct=bilibili_api_config.get_config('bili_jct'))
 
-        response = await cls._post_json(url=_ticket_url, params=params)
+        response = await cls._post_acquire_as_json(url=_ticket_url, params=params)
         ticket_data = Ticket.model_validate(response)
 
         bilibili_api_config.update_config(
@@ -118,7 +118,7 @@ class BilibiliCommon(BaseCommonAPI):
         _exclimbwuzhi_url: str = 'https://api.bilibili.com/x/internal/gaia-gateway/ExClimbWuzhi'
 
         # get buvid3, buvid4
-        spi_response = await cls._get_json(url=_spi_url)
+        spi_response = await cls._get_resource_as_json(url=_spi_url)
         spi_data = WebInterfaceSpi.model_validate(spi_response)
 
         # active buvid
@@ -140,7 +140,7 @@ class BilibiliCommon(BaseCommonAPI):
             'referer': 'https://www.bilibili.com/',
             'Content-Type': 'application/json'
         })
-        await cls._post_json(url=_exclimbwuzhi_url, headers=headers, json=payload, cookies=cookies)
+        await cls._post_acquire_as_json(url=_exclimbwuzhi_url, headers=headers, json=payload, cookies=cookies)
         return cookies
 
     @classmethod
@@ -151,7 +151,7 @@ class BilibiliCommon(BaseCommonAPI):
         """
         url = 'https://api.bilibili.com/x/web-interface/wbi/search/all/v2'
         params = await cls.sign_wbi_params(params={'keyword': keyword})
-        data = await cls._get_json(url=url, params=params)
+        data = await cls._get_resource_as_json(url=url, params=params)
         return SearchAllResult.model_validate(data)
 
     @classmethod
@@ -175,7 +175,7 @@ class BilibiliCommon(BaseCommonAPI):
             **kwargs
         }
         search_url: str = 'https://api.bilibili.com/x/web-interface/wbi/search/type'
-        searching_data = await cls._get_json(url=search_url, params=params)
+        searching_data = await cls._get_resource_as_json(url=search_url, params=params)
         return SearchTypeResult.model_validate(searching_data)
 
 

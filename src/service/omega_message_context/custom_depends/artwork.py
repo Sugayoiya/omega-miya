@@ -8,7 +8,7 @@
 @Software       : PyCharm
 """
 
-from typing import Annotated, TypeAlias
+from typing import Annotated
 
 from nonebot.params import Depends
 from pydantic import BaseModel, ConfigDict
@@ -33,7 +33,7 @@ class MinimalArtistData(BaseModel):
 
 ARTWORK_CONTEXT_MANAGER = MessageContextManager(data_type=MinimalArtworkData)
 """作品信息上下文管理器"""
-OPTIONAL_REPLY_ARTWORK: TypeAlias = Annotated[
+type OPTIONAL_REPLY_ARTWORK = Annotated[
     MinimalArtworkData | None,
     Depends(ARTWORK_CONTEXT_MANAGER.get_reply_context, use_cache=True)
 ]
@@ -41,7 +41,7 @@ OPTIONAL_REPLY_ARTWORK: TypeAlias = Annotated[
 
 ARTIST_CONTEXT_MANAGER = MessageContextManager(data_type=MinimalArtistData)
 """作品用户信息上下文管理器"""
-OPTIONAL_REPLY_ARTIST: TypeAlias = Annotated[
+type OPTIONAL_REPLY_ARTIST = Annotated[
     MinimalArtistData | None,
     Depends(ARTIST_CONTEXT_MANAGER.get_reply_context, use_cache=True)
 ]
@@ -61,7 +61,7 @@ async def _optional_artist_or_artwork_artist(
     return MinimalArtistData.model_validate(context.model_dump())
 
 
-OPTIONAL_REPLY_ARTIST_OR_ARTWORK_ARTIST: TypeAlias = Annotated[
+type OPTIONAL_REPLY_ARTIST_OR_ARTWORK_ARTIST = Annotated[
     MinimalArtistData | None,
     Depends(_optional_artist_or_artwork_artist, use_cache=True)
 ]

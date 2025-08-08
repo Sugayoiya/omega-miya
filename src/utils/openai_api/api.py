@@ -8,6 +8,7 @@
 @Software       : PyCharm
 """
 
+from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, Literal, Self
 
 from src.compat import dump_obj_as
@@ -15,6 +16,7 @@ from src.utils import BaseCommonAPI
 from .config import openai_service_config
 from .models import (
     ChatCompletion,
+    ChatCompletionChunk,
     Embeddings,
     File,
     FileContent,
@@ -147,8 +149,38 @@ class BaseOpenAIClient(BaseCommonAPI):
             ),
             **kwargs,
         }
-        response = await self._post_json(url=url, json=data, headers=self.request_headers, timeout=timeout)
+        response = await self._post_acquire_as_json(url=url, json=data, headers=self.request_headers, timeout=timeout)
         return ChatCompletion.model_validate(response)
+
+    async def create_chat_completion_using_stream(
+            self,
+            model: str,
+            message: 'ChatMessage',
+            *,
+            timeout: int = 60,
+            **kwargs,
+    ) -> AsyncGenerator[ChatCompletionChunk, None]:
+        url = f'{self.base_url}/chat/completions'
+        data = {
+            'model': model,
+            'messages': dump_obj_as(
+                list[MessageContent],
+                message.messages if isinstance(message, Message) else message,
+                mode='json',
+                exclude_none=True,
+            ),
+            'stream': True,
+            **kwargs,
+        }
+
+        line_prefix = r'data: '
+        eof_target = r'[DONE]'
+        async for line in self._stream_post_acquire_iter_lines(
+                url=url, json=data, headers=self.request_headers, timeout=timeout, chunk_size=64,
+        ):
+            if line and line.startswith(line_prefix):
+                if (content := line.removeprefix(line_prefix).strip()) != eof_target:
+                    yield ChatCompletionChunk.model_validate_json(content)
 
     async def create_embeddings(
             self,
@@ -167,13 +199,13 @@ class BaseOpenAIClient(BaseCommonAPI):
             'encoding_format': encoding_format,
             **kwargs,
         }
-        response = await self._post_json(url=url, json=data, headers=self.request_headers, timeout=timeout)
+        response = await self._post_acquire_as_json(url=url, json=data, headers=self.request_headers, timeout=timeout)
         return Embeddings.model_validate(response)
 
     async def list_models(self) -> ModelList:
         """Lists the currently available models, and provides basic information about each one."""
         url = f'{self.base_url}/models'
-        response = await self._get_json(url=url, headers=self.request_headers)
+        response = await self._get_resource_as_json(url=url, headers=self.request_headers)
         return ModelList.model_validate(response)
 
     async def upload_file(
@@ -204,7 +236,7 @@ class BaseOpenAIClient(BaseCommonAPI):
                 'file': (file.name, f, 'application/octet-stream'),
                 'purpose': (None, purpose, 'text/plain')
             }
-            response = await self._post_json(
+            response = await self._post_acquire_as_json(
                 url=url,
                 files=files,
                 headers=headers,
@@ -231,19 +263,19 @@ class BaseOpenAIClient(BaseCommonAPI):
         if after is not None:
             params['after'] = after
 
-        response = await self._get_json(url=url, params=params, headers=self.request_headers)
+        response = await self._get_resource_as_json(url=url, params=params, headers=self.request_headers)
         return FileList.model_validate(response)
 
     async def retrieve_file(self, file_id: str) -> File:
         """Returns information about a specific file."""
         url = f'{self.base_url}/files/{file_id}'
-        response = await self._get_json(url=url, headers=self.request_headers)
+        response = await self._get_resource_as_json(url=url, headers=self.request_headers)
         return File.model_validate(response)
 
     async def retrieve_file_content(self, file_id: str) -> FileContent:
         """Returns the contents of the specified file."""
         url = f'{self.base_url}/files/{file_id}/content'
-        response = await self._get_json(url=url, headers=self.request_headers)
+        response = await self._get_resource_as_json(url=url, headers=self.request_headers)
         return FileContent.model_validate(response)
 
     async def delete_file(self, file_id: str) -> FileDeleted:

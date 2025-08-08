@@ -204,13 +204,17 @@ class TraceMoe(BaseImageSearcherAPI):
     async def _query_anilist_result(cls, anilist_id: int | str) -> AnilistSingleResult:
         """查询单个作品的 anilist 数据"""
         params = {'query': cls._get_anilist_api_single_query(), 'variables': {'id': str(anilist_id)}}
-        return AnilistSingleResult.model_validate(await cls._post_json(url=cls._get_anilist_api_cn(), json=params))
+        return AnilistSingleResult.model_validate(
+            await cls._post_acquire_as_json(url=cls._get_anilist_api_cn(), json=params)
+        )
 
     @classmethod
     async def _query_anilist_multi_result(cls, anilist_ids: Iterable[int | str]) -> AnilistMultiResult:
         """查询多个作品的 anilist 数据"""
         params = {'query': cls._get_anilist_api_multi_query(), 'variables': {'ids': [str(x) for x in anilist_ids]}}
-        return AnilistMultiResult.model_validate(await cls._post_json(url=cls._get_anilist_api_cn(), json=params))
+        return AnilistMultiResult.model_validate(
+            await cls._post_acquire_as_json(url=cls._get_anilist_api_cn(), json=params)
+        )
 
     @classmethod
     async def _handel_anilist_result(cls, data: Iterable[TraceMoeResults]) -> list[ImageSearchingResult]:
@@ -239,7 +243,7 @@ class TraceMoe(BaseImageSearcherAPI):
             files = {
                 'file': (image.name, f, 'application/octet-stream'),
             }
-            result = await cls._post_json(url=cls.get_api_url(), files=files)  # type: ignore
+            result = await cls._post_acquire_as_json(url=cls.get_api_url(), files=files)  # type: ignore
 
         return await cls._handel_anilist_result(data=TraceMoeResult.model_validate(result).result)
 
@@ -248,14 +252,16 @@ class TraceMoe(BaseImageSearcherAPI):
         files = {
             'file': ('blob', image, 'application/octet-stream'),
         }
-        result = await cls._post_json(url=cls.get_api_url(), files=files)  # type: ignore
+        result = await cls._post_acquire_as_json(url=cls.get_api_url(), files=files)  # type: ignore
 
         return await cls._handel_anilist_result(data=TraceMoeResult.model_validate(result).result)
 
     @classmethod
     async def _search_url_image(cls, image: str) -> list[ImageSearchingResult]:
         params = {'url': image}
-        tracemoe_result = TraceMoeResult.model_validate(await cls._get_json(url=cls.get_api_url(), params=params))
+        tracemoe_result = TraceMoeResult.model_validate(
+            await cls._get_resource_as_json(url=cls.get_api_url(), params=params)
+        )
         return await cls._handel_anilist_result(data=tracemoe_result.result)
 
 

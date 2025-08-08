@@ -40,7 +40,7 @@ class BilibiliDynamic(BilibiliCommon):
         if update_baseline is not None:
             params.update({'type': str(update_baseline)})
 
-        data = await cls._get_json(url=url, params=params)
+        data = await cls._get_resource_as_json(url=url, params=params)
         return Dynamics.model_validate(data)
 
     @classmethod
@@ -62,7 +62,7 @@ class BilibiliDynamic(BilibiliCommon):
         if features is not None:
             params.update({'features': features})
 
-        data = await cls._get_json(url=url, params=params)
+        data = await cls._get_resource_as_json(url=url, params=params)
         return Dynamics.model_validate(data)
 
     @classmethod
@@ -78,7 +78,7 @@ class BilibiliDynamic(BilibiliCommon):
         if timezone_offset is not None:
             params.update({'timezone_offset': str(timezone_offset)})
 
-        data = await cls._get_json(url=url, params=params)
+        data = await cls._get_resource_as_json(url=url, params=params)
         return DynDetail.model_validate(data)
 
 
