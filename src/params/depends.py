@@ -8,16 +8,21 @@
 @Software       : PyCharm
 """
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from nonebot.adapters import Bot as BaseBot
 from nonebot.adapters import Event as BaseEvent
+from nonebot.adapters import Message as BaseMessage
 from nonebot.params import Depends
+from nonebot.typing import T_State
 
 from src.service import OmegaMatcherInterface as OmMI
 
-type OMEGA_MATCHER_INTERFACE = Annotated[OmMI, Depends(OmMI.depend())]
-"""子依赖: OmegaMatcherInterface"""
+type EVENT_MATCHER_INTERFACE = Annotated[OmMI, Depends(OmMI.depend(acquire_type='event'))]
+"""子依赖: 事件对象的 OmegaMatcherInterface"""
+
+type USER_MATCHER_INTERFACE = Annotated[OmMI, Depends(OmMI.depend(acquire_type='user'))]
+"""子依赖: 用户对象的 OmegaMatcherInterface"""
 
 
 def _event_user_nickname(bot: BaseBot, event: BaseEvent) -> str:
@@ -73,12 +78,38 @@ def _event_reply_msg_plain_text(bot: BaseBot, event: BaseEvent) -> str | None:
 type OPTIONAL_EVENT_REPLY_MSG_PLAIN_TEXT = Annotated[str | None, Depends(_event_reply_msg_plain_text, use_cache=True)]
 """子依赖: 获取当前事件回复消息的文本"""
 
+
+class StatePlainTextInner:
+    """State 中的纯文本值"""
+
+    def __init__(self, key: Any):
+        self.key = key
+
+    def __call__(self, state: T_State) -> str:
+        value = state.get(self.key, None)
+        if value is None:
+            raise KeyError(f'State has not key: {self.key}')
+        elif isinstance(value, str):
+            return value
+        elif isinstance(value, BaseMessage):
+            return value.extract_plain_text()
+        else:
+            return str(value)
+
+
+def state_plain_text(key: str) -> str:
+    """子依赖: 获取 State 中的纯文本值"""
+    return Depends(StatePlainTextInner(key=key), use_cache=True)
+
+
 __all__ = [
-    'EVENT_USER_NICKNAME',
     'EVENT_MSG_MENTIONED_USER_IDS',
     'EVENT_MSG_IMAGE_URLS',
-    'OMEGA_MATCHER_INTERFACE',
-    'OPTIONAL_EVENT_REPLY_MESSAGE_ID',
+    'EVENT_MATCHER_INTERFACE',
     'EVENT_REPLY_MSG_IMAGE_URLS',
+    'EVENT_USER_NICKNAME',
+    'OPTIONAL_EVENT_REPLY_MESSAGE_ID',
     'OPTIONAL_EVENT_REPLY_MSG_PLAIN_TEXT',
+    'USER_MATCHER_INTERFACE',
+    'state_plain_text',
 ]
