@@ -8,7 +8,7 @@
 @Software       : PyCharm
 """
 
-from typing import Annotated, TypeAlias
+from typing import Annotated
 
 from nonebot import get_driver, logger
 from nonebot.adapters import Bot as BaseBot
@@ -66,7 +66,7 @@ def _get_reply_message_id(bot: BaseBot, event: BaseEvent) -> str | None:
         return None
 
 
-OPTIONAL_REPLY_MESSAGE_ID: TypeAlias = Annotated[
+type OPTIONAL_REPLY_MESSAGE_ID = Annotated[
     str | None, Depends(_get_reply_message_id, use_cache=True)
 ]
 """获取事件回复或引用消息 ID"""
