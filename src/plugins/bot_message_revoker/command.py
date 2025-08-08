@@ -8,14 +8,11 @@
 @Software       : PyCharm
 """
 
-from typing import Annotated
-
 from nonebot.log import logger
-from nonebot.params import Depends
 from nonebot.permission import SUPERUSER
 from nonebot.plugin import on_command
 
-from src.service import OmegaMatcherInterface as OmMI
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.service import enable_processor_state
 
 
@@ -27,9 +24,7 @@ from src.service import enable_processor_state
     block=True,
     state=enable_processor_state(name='SelfRecall', enable_processor=False),
 ).handle()
-async def handle_self_recall(
-    interface: Annotated[OmMI, Depends(OmMI.depend())],
-) -> None:
+async def handle_self_recall(interface: EVENT_MATCHER_INTERFACE) -> None:
     reply_msg_id = interface.get_event_reply_msg_id()
     if not reply_msg_id:
         return

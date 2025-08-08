@@ -11,13 +11,13 @@
 from typing import Annotated
 
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends, ShellCommandArgs
+from nonebot.params import ArgStr, ShellCommandArgs
 from nonebot.plugin import on_shell_command
 from nonebot.rule import ArgumentParser, Namespace
 from pydantic import BaseModel, ConfigDict
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_str_single_arg_parser_handler, get_shell_command_parse_failed_handler
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import enable_processor_state
 from src.utils.tencent_cloud_api import TencentTMT
 
@@ -57,7 +57,7 @@ def parse_arguments(args: Namespace) -> TranslateArguments:
     ),
 ).got('word')
 async def handle_translate(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         args: Annotated[Namespace, ShellCommandArgs()],
         word: Annotated[str | None, ArgStr('word')],
 ) -> None:
@@ -73,8 +73,8 @@ async def handle_translate(
     try:
         result = await TencentTMT().text_translate(source_text=translate_word, source=args.source, target=args.target)
         if result.error:
-            raise RuntimeError(result.Response.Error)
-        await interface.send_reply(f'翻译结果:\n\n{result.Response.TargetText}')
+            raise RuntimeError(result.Response.Error)  # type: ignore
+        await interface.send_reply(f'翻译结果:\n\n{result.Response.TargetText}')  # type: ignore
     except Exception as e:
         logger.error(f'Translate | 翻译失败, {e}')
         await interface.send_reply('翻译失败, 发生了意外的错误, 请稍后再试')

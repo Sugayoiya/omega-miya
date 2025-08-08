@@ -12,10 +12,11 @@ from collections.abc import Callable, Coroutine
 from typing import TYPE_CHECKING, Annotated, Any
 
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.plugin import CommandGroup
 from nonebot.typing import T_State
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import (
     get_command_str_multi_args_parser_handler,
     get_command_str_single_arg_parser_handler,
@@ -65,7 +66,7 @@ pixiv_artist = CommandGroup(
     handlers=[get_command_str_single_arg_parser_handler('page', default='1')],
 ).got('page', prompt='想看榜单的哪一页呢? 请输入页码:')
 async def handle_daily_ranking(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         page: Annotated[str, ArgStr('page')],
 ) -> None:
     await handle_ranking_preview(
@@ -81,7 +82,7 @@ async def handle_daily_ranking(
     handlers=[get_command_str_single_arg_parser_handler('page', default='1')],
 ).got('page', prompt='想看榜单的哪一页呢? 请输入页码:')
 async def handle_weekly_ranking(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         page: Annotated[str, ArgStr('page')],
 ) -> None:
     await handle_ranking_preview(
@@ -97,7 +98,7 @@ async def handle_weekly_ranking(
     handlers=[get_command_str_single_arg_parser_handler('page', default='1')],
 ).got('page', prompt='想看榜单的哪一页呢? 请输入页码:')
 async def handle_monthly_ranking(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         page: Annotated[str, ArgStr('page')],
 ) -> None:
     await handle_ranking_preview(
@@ -113,7 +114,7 @@ async def handle_monthly_ranking(
     handlers=[get_command_str_single_arg_parser_handler('user_nick')],
 ).got('user_nick', prompt='请输入想要搜索的Pixiv用户名:')
 async def handle_searching_user(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         user_nick: Annotated[str, ArgStr('user_nick')],
 ) -> None:
     user_nick = user_nick.strip()
@@ -141,7 +142,7 @@ pixiv_artist_artworks = pixiv_artist.command(
 @pixiv_artist_artworks.handle()
 async def handle_preview_reply_artist_artworks(
         artist_data: OPTIONAL_REPLY_ARTIST_OR_ARTWORK_ARTIST,
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         state: T_State,
 ) -> None:
     if artist_data is None:
@@ -155,7 +156,7 @@ async def handle_preview_reply_artist_artworks(
 
 @pixiv_artist_artworks.got('user_id_page_0', prompt='请输入用户的UID:')
 async def handle_preview_user_artworks(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         user_id: Annotated[str, ArgStr('user_id_page_0')],
         state: T_State,
 ) -> None:
@@ -199,7 +200,7 @@ pixiv_artist_bookmark = pixiv_artist.command(
 @pixiv_artist_bookmark.handle()
 async def handle_preview_reply_user_bookmark(
         artist_data: OPTIONAL_REPLY_ARTIST_OR_ARTWORK_ARTIST,
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         state: T_State,
 ) -> None:
     if artist_data is None:
@@ -213,7 +214,7 @@ async def handle_preview_reply_user_bookmark(
 
 @pixiv_artist_bookmark.handle()
 async def handle_preview_user_bookmark(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         state: T_State,
 ) -> None:
     user_id = state.get('user_id_page_0', None)

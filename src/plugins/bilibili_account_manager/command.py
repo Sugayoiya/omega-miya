@@ -8,15 +8,12 @@
 @Software       : PyCharm
 """
 
-from typing import Annotated
-
 from nonebot.log import logger
-from nonebot.params import Depends
 from nonebot.permission import SUPERUSER
 from nonebot.plugin import on_command
 from nonebot.rule import to_me
 
-from src.service import OmegaMatcherInterface as OmMI
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.service import OmegaMessageSegment, enable_processor_state
 from src.utils.bilibili_api import BilibiliCredential
 
@@ -30,7 +27,7 @@ from src.utils.bilibili_api import BilibiliCredential
     permission=SUPERUSER,
     state=enable_processor_state(name='BilibiliQrcodeLogin', enable_processor=False),
 ).handle()
-async def handle_qrcode_login(interface: Annotated[OmMI, Depends(OmMI.depend())]) -> None:
+async def handle_qrcode_login(interface: EVENT_MATCHER_INTERFACE) -> None:
     bc = BilibiliCredential()
 
     try:

@@ -11,11 +11,11 @@
 from datetime import datetime
 from typing import Annotated
 
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.plugin import on_command
 
+from src.params.depends import USER_MATCHER_INTERFACE
 from src.params.handler import get_command_str_single_arg_parser_handler
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import enable_processor_state
 from .helpers import query_divination
 
@@ -29,7 +29,7 @@ from .helpers import query_divination
     state=enable_processor_state(name='Maybe', level=10),
 ).got('divination_text', prompt='你想问什么事呢?')
 async def handle_divination(
-        interface: Annotated[OmMI, Depends(OmMI.depend('user'))],
+        interface: USER_MATCHER_INTERFACE,
         divination_text: Annotated[str, ArgStr('divination_text')],
 ) -> None:
     divination_text = divination_text.strip()

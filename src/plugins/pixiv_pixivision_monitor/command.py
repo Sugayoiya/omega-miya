@@ -11,10 +11,10 @@
 from typing import Annotated
 
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_str_single_arg_parser_handler
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import OmegaMessageSegment, OmegaSubscriptionHandlerManager
 from .subscription_source import PixivisionSubscriptionManager
 
@@ -37,7 +37,7 @@ _pixivision = _pixivision_handler_manager.register_handlers()
     priority=10,
 ).got('page')
 async def handle_query_articles_list(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         page: Annotated[str, ArgStr('page')],
 ) -> None:
     page = page.strip()
@@ -62,7 +62,7 @@ async def handle_query_articles_list(
     priority=10,
 ).got('aid', prompt='想要查看哪个 Pixivision 特辑呢? 请输入特辑 ID:')
 async def handle_query_article(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         aid: Annotated[str, ArgStr('aid')],
 ) -> None:
     aid = aid.strip()

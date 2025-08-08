@@ -12,11 +12,11 @@ from datetime import datetime
 from typing import Annotated
 
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.plugin import CommandGroup
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_str_multi_args_parser_handler, get_command_str_single_arg_parser_handler
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import OmegaMessageSegment, enable_processor_state
 from src.utils import semaphore_gather
 from .data_source import ShindanMaker
@@ -43,7 +43,7 @@ make_shindan = shindan_maker.command(
 @make_shindan.got('shindan_arg_0', prompt='你想做什么占卜呢?\n请输入想要做的占卜名称或ID:')
 @make_shindan.got('shindan_arg_1', prompt='请输入您想要进行占卜对象的昵称:')
 async def handle_shindan_make(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         shindan_title: Annotated[str, ArgStr('shindan_arg_0')],
         input_name: Annotated[str, ArgStr('shindan_arg_1')],
 ) -> None:
@@ -88,7 +88,7 @@ async def handle_shindan_make(
     handlers=[get_command_str_single_arg_parser_handler('keyword')]
 ).got('keyword', prompt='请输入搜索关键词:')
 async def handle_shindan_searching(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         keyword: Annotated[str, ArgStr('keyword')],
 ) -> None:
     keyword = keyword.strip()
@@ -106,7 +106,7 @@ async def handle_shindan_searching(
     'ranking',
     aliases={'shindan_ranking', 'ShindanRanking'},
 ).handle()
-async def handle_shindan_ranking(interface: Annotated[OmMI, Depends(OmMI.depend())]) -> None:
+async def handle_shindan_ranking(interface: EVENT_MATCHER_INTERFACE) -> None:
     try:
         ranking_result = await ShindanMaker.complex_ranking()
         ranking_text = '\n'.join(f'{x.id}: {x.name}' for x in ranking_result)

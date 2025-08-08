@@ -12,12 +12,12 @@ from typing import Annotated
 
 from nonebot.adapters import Message as BaseMessage
 from nonebot.log import logger
-from nonebot.params import Arg, ArgStr, Depends
+from nonebot.params import Arg, ArgStr
 from nonebot.plugin import CommandGroup
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_message_arg_parser_handler
 from src.params.permission import IS_ADMIN
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import OmegaMessageTransfer, enable_processor_state
 from .helpers import (
     add_schedule_job,
@@ -47,7 +47,7 @@ set_ = schedule_message.command(
 @set_.got('crontab', prompt='请发送定时任务crontab表达式:')
 @set_.got('message', prompt='请发送你要设置的定时消息:')
 async def handle_set_schedule_message(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         job_name: Annotated[str, ArgStr('job_name')],
         crontab: Annotated[str, ArgStr('crontab')],
         message: Annotated[BaseMessage, Arg('message')],
@@ -85,7 +85,7 @@ async def handle_set_schedule_message(
     'remove', aliases={'删除定时消息', '移除定时消息'}, handlers=[get_command_message_arg_parser_handler('job_name')]
 ).got('job_name', prompt='请输入想要删除的定时消息任务名称:')
 async def handle_remove_schedule_message(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         job_name: Annotated[str, ArgStr('job_name')]
 ) -> None:
     job_name = job_name.strip()
@@ -111,7 +111,7 @@ async def handle_remove_schedule_message(
 
 
 @schedule_message.command('list', aliases={'定时消息列表', '查看定时消息'}).handle()
-async def handle_list_schedule_message(interface: Annotated[OmMI, Depends(OmMI.depend())]) -> None:
+async def handle_list_schedule_message(interface: EVENT_MATCHER_INTERFACE) -> None:
     try:
         exist_jobs = await get_schedule_message_job_list(interface=interface)
     except Exception as e:

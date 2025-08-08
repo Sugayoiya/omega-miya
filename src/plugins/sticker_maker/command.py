@@ -11,12 +11,12 @@
 from typing import Annotated
 
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.plugin import on_command
 from nonebot.typing import T_State
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_str_multi_args_parser_handler, get_set_default_state_handler
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import OmegaMessageSegment, enable_processor_state
 from .render import download_source_image, get_all_render_name, get_render
 
@@ -37,7 +37,7 @@ sticker_maker = on_command(
 @sticker_maker.got('sticker_arg_1', prompt='请输入你想要制作的表情包的文字:')
 @sticker_maker.got('source_images')
 async def handle_make_sticker(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         render_name: Annotated[str | None, ArgStr('sticker_arg_0')],
         text: Annotated[str | None, ArgStr('sticker_arg_1')],
         state: T_State,

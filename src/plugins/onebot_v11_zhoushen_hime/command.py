@@ -12,25 +12,19 @@
 
 from typing import Annotated, Literal
 
-from nonebot.adapters.onebot.v11 import (
-    Bot as OneBotV11Bot,
-)
-from nonebot.adapters.onebot.v11 import (
-    GroupMessageEvent as OneBotV11GroupMessageEvent,
-)
-from nonebot.adapters.onebot.v11 import (
-    GroupUploadNoticeEvent as OneBotV11GroupUploadNoticeEvent,
-)
+from nonebot.adapters.onebot.v11 import Bot as OneBotV11Bot
+from nonebot.adapters.onebot.v11 import GroupMessageEvent as OneBotV11GroupMessageEvent
+from nonebot.adapters.onebot.v11 import GroupUploadNoticeEvent as OneBotV11GroupUploadNoticeEvent
 from nonebot.adapters.onebot.v11.permission import GROUP_ADMIN, GROUP_OWNER
 from nonebot.log import logger
 from nonebot.matcher import Matcher
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.permission import SUPERUSER
 from nonebot.plugin import on_command, on_notice
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_str_single_arg_parser_handler
 from src.params.rule import event_has_permission_node
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import enable_processor_state
 from .helpers import ZhouChecker, download_file, upload_result_file
 
@@ -54,7 +48,7 @@ _ENABLE_ZHOUSHEN_HIME_NODE: Literal['enable_zhoushen_hime'] = 'enable_zhoushen_h
 async def handle_zhoushen_hime_manager(
         __bot: OneBotV11Bot,
         __event: OneBotV11GroupMessageEvent,
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         switch: Annotated[str, ArgStr('switch')],
 ) -> None:
     switch = switch.strip().lower()

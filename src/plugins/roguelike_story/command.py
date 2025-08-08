@@ -12,11 +12,11 @@ from typing import Annotated
 
 from nonebot.exception import MatcherException
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.plugin import CommandGroup
 
+from src.params.depends import EVENT_MATCHER_INTERFACE, USER_MATCHER_INTERFACE
 from src.params.handler import get_command_str_single_arg_parser_handler
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import enable_processor_state
 from .helpers import handle_fast_roll_action, handle_story_continue, handle_story_init
 from .session import get_story_session, remove_story_session
@@ -38,7 +38,7 @@ roguelike_story = CommandGroup(
     handlers=[get_command_str_single_arg_parser_handler('description', ensure_key=True)],
 ).got('description')
 async def handle_story_start(
-        interface: Annotated[OmMI, Depends(OmMI.depend('event'))],
+        interface: EVENT_MATCHER_INTERFACE,
         description: Annotated[str | None, ArgStr('description')],
 ) -> None:
     try:
@@ -65,7 +65,7 @@ async def handle_story_start(
     handlers=[get_command_str_single_arg_parser_handler('ensure', ensure_key=True)],
 ).got('ensure')
 async def handle_story_remove(
-        interface: Annotated[OmMI, Depends(OmMI.depend('event'))],
+        interface: EVENT_MATCHER_INTERFACE,
         ensure: Annotated[str | None, ArgStr('ensure')],
 ) -> None:
     try:
@@ -89,7 +89,7 @@ async def handle_story_remove(
     handlers=[get_command_str_single_arg_parser_handler('description')],
 ).got('description', prompt='请输入需要检定的行动或任务描述')
 async def handle_action_checking(
-        interface: Annotated[OmMI, Depends(OmMI.depend('user'))],
+        interface: USER_MATCHER_INTERFACE,
         description: Annotated[str, ArgStr('description')],
 ) -> None:
     try:
@@ -118,7 +118,7 @@ async def handle_action_checking(
     handlers=[get_command_str_single_arg_parser_handler('description')],
 ).got('description', prompt='请输入需要检定的行动或任务描述')
 async def handle_fast_action_checking(
-        interface: Annotated[OmMI, Depends(OmMI.depend('user'))],
+        interface: USER_MATCHER_INTERFACE,
         description: Annotated[str, ArgStr('description')],
 ) -> None:
     try:

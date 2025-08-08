@@ -11,12 +11,12 @@
 from typing import TYPE_CHECKING, Annotated
 
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.plugin import CommandGroup
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_str_single_arg_parser_handler, get_set_default_state_handler
 from src.params.permission import IS_ADMIN
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import enable_processor_state, scheduler
 
 if TYPE_CHECKING:
@@ -61,7 +61,7 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
         """生成新增订阅流程函数以供注册"""
 
         async def _interface_entity_add_subscription(
-                interface: Annotated[OmMI, Depends(OmMI.depend())],
+                interface: EVENT_MATCHER_INTERFACE,
                 sub_id: str,
         ) -> None:
             """为 Entity 添加订阅"""
@@ -84,13 +84,13 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
             await interface.finish_reply(msg)
 
         async def _add_subscription_handler_with_default_sub_id(
-                interface: Annotated[OmMI, Depends(OmMI.depend())],
+                interface: EVENT_MATCHER_INTERFACE,
         ) -> None:
             if self._default_sub_id is not None:
                 await _interface_entity_add_subscription(interface=interface, sub_id=self._default_sub_id)
 
         async def _add_subscription_handler(
-                interface: Annotated[OmMI, Depends(OmMI.depend())],
+                interface: EVENT_MATCHER_INTERFACE,
                 ensure: Annotated[str | None, ArgStr('ensure')],
                 sub_id: Annotated[str | None, ArgStr('sub_id')],
         ) -> None:
@@ -131,7 +131,7 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
         """生成移除订阅流程函数以供注册"""
 
         async def _interface_entity_del_subscription(
-                interface: Annotated[OmMI, Depends(OmMI.depend())],
+                interface: EVENT_MATCHER_INTERFACE,
                 sub_id: str,
         ) -> None:
             """为 Entity 删除订阅"""
@@ -146,13 +146,13 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
             await interface.finish_reply(msg)
 
         async def _del_subscription_handler_with_default_sub_id(
-                interface: Annotated[OmMI, Depends(OmMI.depend())],
+                interface: EVENT_MATCHER_INTERFACE,
         ) -> None:
             if self._default_sub_id is not None:
                 await _interface_entity_del_subscription(interface=interface, sub_id=self._default_sub_id)
 
         async def _del_subscription_handler(
-                interface: Annotated[OmMI, Depends(OmMI.depend())],
+                interface: EVENT_MATCHER_INTERFACE,
                 ensure: Annotated[str | None, ArgStr('ensure')],
                 sub_id: Annotated[str | None, ArgStr('sub_id')],
         ) -> None:
@@ -202,7 +202,7 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
         """生成查询订阅列表流程函数以供注册"""
 
         async def _list_subscription_handler(
-                interface: Annotated[OmMI, Depends(OmMI.depend())],
+                interface: EVENT_MATCHER_INTERFACE,
         ) -> None:
             try:
                 exist_sub = await self._subscription_manager.query_entity_subscribed_sub_source(interface=interface)
@@ -220,7 +220,7 @@ class SubscriptionHandlerManager[SM_T: 'BaseSubscriptionManager']:
         """生成切换订阅通知@所有人开关的流程函数以供注册"""
 
         async def _switch_subscription_notice_at_all_handler(
-                interface: Annotated[OmMI, Depends(OmMI.depend())],
+                interface: EVENT_MATCHER_INTERFACE,
                 switch: Annotated[str, ArgStr('switch')],
         ) -> None:
             switch = switch.strip().lower()

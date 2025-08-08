@@ -13,13 +13,13 @@ from typing import Annotated
 
 from nonebot.log import logger
 from nonebot.matcher import Matcher
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.permission import SUPERUSER
 from nonebot.plugin import CommandGroup
 from nonebot.rule import to_me
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_str_multi_args_parser_handler, get_command_str_single_arg_parser_handler
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import OmegaMessageSegment, enable_processor_state
 from .helpers import (
     bind_entity_mailbox,
@@ -83,7 +83,7 @@ async def handle_add_mailbox(
     handlers=[get_command_str_single_arg_parser_handler('mailbox_address', ensure_key=True)]
 ).got('mailbox_address', prompt='请输入需要绑定的邮箱地址:')
 async def handle_bind_mailbox(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         mailbox_address: Annotated[str | None, ArgStr('mailbox_address')],
 ) -> None:
     try:
@@ -120,7 +120,7 @@ async def handle_bind_mailbox(
     handlers=[get_command_str_single_arg_parser_handler('mailbox_address', ensure_key=True)]
 ).got('mailbox_address', prompt='请输入需要解绑的邮箱地址:')
 async def handle_unbind_mailbox(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         mailbox_address: Annotated[str | None, ArgStr('mailbox_address')],
 ) -> None:
     try:
@@ -158,7 +158,7 @@ async def handle_unbind_mailbox(
     permission=None,
     state=enable_processor_state(name='ReceiveEmail', level=10),
 ).handle()
-async def handle_receive_email(interface: Annotated[OmMI, Depends(OmMI.depend())]) -> None:
+async def handle_receive_email(interface: EVENT_MATCHER_INTERFACE) -> None:
     try:
         bound_mailbox = await get_entity_bound_mailbox(interface=interface)
     except Exception as e:

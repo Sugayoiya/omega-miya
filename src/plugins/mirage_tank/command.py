@@ -11,12 +11,12 @@
 from typing import Annotated
 
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.plugin import on_command
 from nonebot.typing import T_State
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_str_single_arg_parser_handler
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import OmegaMessageSegment, enable_processor_state
 from .utils import (
     color_noise,
@@ -49,7 +49,7 @@ _AVAILABLE_MODE_TEXT: str = ', '.join(f'{x!r}' for x in _AVAILABLE_MODE)
     state=enable_processor_state(name='MirageTank', level=10),
 ).got('step_arg')
 async def handle_mirage_tank(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         step_arg: Annotated[str, ArgStr('step_arg')],
         state: T_State,
 ) -> None:

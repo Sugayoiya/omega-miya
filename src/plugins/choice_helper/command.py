@@ -11,11 +11,11 @@
 import random
 from typing import Annotated
 
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.plugin import on_command
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_str_single_arg_parser_handler
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import enable_processor_state
 
 
@@ -28,7 +28,7 @@ from src.service import enable_processor_state
     state=enable_processor_state(name='ChoiceHelper', level=10),
 ).got('choices', prompt='有啥选项, 发来我帮你选~')
 async def handle_help_choices(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         choices: Annotated[str, ArgStr('choices')],
 ) -> None:
     choice_list = choices.strip().split()

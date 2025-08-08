@@ -9,12 +9,10 @@
 """
 
 from datetime import datetime
-from typing import Annotated
 
-from nonebot.params import Depends
 from nonebot.plugin import MatcherGroup
 
-from src.service import OmegaMatcherInterface as OmMI
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.service import enable_processor_state
 from .data_source import send_random_food_msg
 
@@ -27,7 +25,7 @@ what_to_eat = MatcherGroup(
 
 
 @what_to_eat.on_command('今天吃啥', aliases={'吃啥'}).handle()
-async def handle_what_to_eat(interface: Annotated[OmMI, Depends(OmMI.depend())]) -> None:
+async def handle_what_to_eat(interface: EVENT_MATCHER_INTERFACE) -> None:
     if 4 <= datetime.now().hour < 10:
         food_type = '早'
     elif 10 <= datetime.now().hour < 16:
@@ -42,23 +40,28 @@ async def handle_what_to_eat(interface: Annotated[OmMI, Depends(OmMI.depend())])
     await send_random_food_msg(interface=interface, food_type=food_type)
 
 
+@what_to_eat.on_regex(r'^.{0,2}吃(啥|什么).?$').handle()
+async def handle_what_to_eat_any(interface: EVENT_MATCHER_INTERFACE) -> None:
+    await send_random_food_msg(interface=interface)
+
+
 @what_to_eat.on_fullmatch(('今早吃啥', '早上吃啥', '早饭吃啥', '早餐吃啥')).handle()
-async def handle_what_to_eat_breakfast(interface: Annotated[OmMI, Depends(OmMI.depend())]) -> None:
+async def handle_what_to_eat_breakfast(interface: EVENT_MATCHER_INTERFACE) -> None:
     await send_random_food_msg(interface=interface, food_type='早')
 
 
 @what_to_eat.on_fullmatch(('今天吃啥', '中午吃啥', '午饭吃啥', '午餐吃啥')).handle()
-async def handle_what_to_eat_lunch(interface: Annotated[OmMI, Depends(OmMI.depend())]) -> None:
+async def handle_what_to_eat_lunch(interface: EVENT_MATCHER_INTERFACE) -> None:
     await send_random_food_msg(interface=interface, food_type='午')
 
 
 @what_to_eat.on_fullmatch(('今晚吃啥', '晚上吃啥', '晚饭吃啥', '晚餐吃啥')).handle()
-async def handle_what_to_eat_dinner(interface: Annotated[OmMI, Depends(OmMI.depend())]) -> None:
+async def handle_what_to_eat_dinner(interface: EVENT_MATCHER_INTERFACE) -> None:
     await send_random_food_msg(interface=interface, food_type='晚')
 
 
 @what_to_eat.on_fullmatch(('夜宵吃啥', '宵夜吃啥')).handle()
-async def handle_what_to_eat_night(interface: Annotated[OmMI, Depends(OmMI.depend())]) -> None:
+async def handle_what_to_eat_night(interface: EVENT_MATCHER_INTERFACE) -> None:
     await send_random_food_msg(interface=interface, food_type='夜')
 
 

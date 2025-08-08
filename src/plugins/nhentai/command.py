@@ -11,12 +11,12 @@
 from typing import Annotated
 
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends, ShellCommandArgs
+from nonebot.params import ArgStr, ShellCommandArgs
 from nonebot.plugin import CommandGroup
 from nonebot.rule import Namespace
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_str_single_arg_parser_handler, get_shell_command_parse_failed_handler
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import OmegaMessageSegment, enable_processor_state
 from src.utils.nhentai import NhentaiGallery
 from .helper import format_gallery_desc_msg, get_searching_argument_parser, parse_from_searching_parser
@@ -39,7 +39,7 @@ nhentai = CommandGroup(
     handlers=[get_command_str_single_arg_parser_handler('gid')],
 ).got('gid', prompt='想要查看哪个作品呢? 请输入作品ID:')
 async def handle_get_nhentai_gallery(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         gid: Annotated[str, ArgStr('gid')],
 ) -> None:
     gid = gid.strip()
@@ -62,7 +62,7 @@ async def handle_get_nhentai_gallery(
     handlers=[get_command_str_single_arg_parser_handler('gid')],
 ).got('gid', prompt='想要查看哪个作品呢? 请输入作品ID:')
 async def handle_preview_hentai_gallery(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         gid: Annotated[str, ArgStr('gid')],
 ) -> None:
     gid = gid.strip()
@@ -86,7 +86,7 @@ async def handle_preview_hentai_gallery(
     handlers=[get_shell_command_parse_failed_handler()],
 ).handle()
 async def handle_nhentai_searching(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         args: Annotated[Namespace, ShellCommandArgs()]
 ) -> None:
     searching_args = parse_from_searching_parser(args=args)

@@ -18,10 +18,10 @@ from nonebot.plugin import on_command
 from nonebot.rule import to_me
 
 from src.database import EntityDAL
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_message_arg_parser_handler
 from src.service import OmegaEntity, enable_processor_state
 from src.service import OmegaEntityInterface as OmEI
-from src.service import OmegaMatcherInterface as OmMI
 from src.utils import semaphore_gather
 
 
@@ -36,7 +36,7 @@ from src.utils import semaphore_gather
     state=enable_processor_state(name='OmegaAnnouncement', enable_processor=False)
 ).got('announcement_content', prompt='请输入公告内容:')
 async def handle_announce(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         entity_dal: Annotated[EntityDAL, Depends(EntityDAL.dal_dependence)],
         announcement_content: Annotated[BaseMessage, Arg('announcement_content')]
 ) -> None:

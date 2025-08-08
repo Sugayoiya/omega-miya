@@ -16,7 +16,7 @@ from nonebot.permission import SUPERUSER
 from nonebot.plugin import CommandGroup
 
 from src.database import StatisticDAL
-from src.service import OmegaMatcherInterface as OmMI
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.service import OmegaMessageSegment, enable_processor_state
 from .helpers import draw_statistics
 
@@ -31,7 +31,7 @@ statistic = CommandGroup(
 
 @statistic.command('event-entity', aliases={'统计信息', '使用统计', '插件统计'}).handle()
 async def handle_event_entity_statistic(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         statistic_dal: Annotated[StatisticDAL, Depends(StatisticDAL.dal_dependence)],
 ) -> None:
     try:
@@ -52,7 +52,7 @@ async def handle_event_entity_statistic(
 
 @statistic.command('bot-all', permission=SUPERUSER).handle()
 async def handle_bot_all_statistic(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         statistic_dal: Annotated[StatisticDAL, Depends(StatisticDAL.dal_dependence)],
 ) -> None:
     try:

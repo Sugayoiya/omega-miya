@@ -12,11 +12,12 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING, Annotated
 
 from nonebot.log import logger
-from nonebot.params import Depends, ShellCommandArgs
+from nonebot.params import ShellCommandArgs
 from nonebot.plugin import on_shell_command
 from nonebot.rule import ArgumentParser, Namespace
 from pydantic import BaseModel, ConfigDict
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_shell_command_parse_failed_handler
 from src.service import OmegaMatcherInterface as OmMI
 from src.service import OmegaMessage, OmegaMessageSegment, enable_processor_state
@@ -162,7 +163,7 @@ class ArtworkHandlerManager[T: 'ImageOpsMixin']:
         """生成插件命令流程函数以供注册"""
 
         async def _handler(
-                interface: Annotated[OmMI, Depends(OmMI.depend())],
+                interface: EVENT_MATCHER_INTERFACE,
                 args: Annotated[Namespace, ShellCommandArgs()],
         ) -> None:
             try:

@@ -13,12 +13,12 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Annotated
 
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.plugin import on_command
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_str_single_arg_parser_handler
 from src.resource import StaticResource, TemporaryResource
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import OmegaMessageSegment, enable_processor_state
 from src.utils import OmegaRequests, semaphore_gather
 from src.utils.image_searcher import ComplexImageSearcher
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     state=enable_processor_state(name='ImageSearcher', level=50)
 ).got('image_url')
 async def handle_search_image(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         image_url: Annotated[str | None, ArgStr('image_url')],
 ) -> None:
     msg_images = interface.get_event_reply_msg_image_urls() + interface.get_event_msg_image_urls()

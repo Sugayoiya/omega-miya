@@ -22,6 +22,7 @@ from nonebot.plugin import CommandGroup, get_loaded_plugins, get_plugin
 from nonebot.typing import T_State
 
 from src.database import PluginDAL
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.permission import IS_ADMIN
 from src.service import OmegaMatcherInterface as OmMI
 from src.service import enable_processor_state
@@ -58,7 +59,7 @@ async def handle_hello(matcher: Matcher):
 
 
 @omega.command('start', aliases={'Start', 'start', 'EnableOmega', 'enable_omega'}, permission=IS_ADMIN).handle()
-async def handle_start(interface: Annotated[OmMI, Depends(OmMI.depend())]):
+async def handle_start(interface: EVENT_MATCHER_INTERFACE):
     try:
         await interface.entity.add_ignore_exists()
         await interface.entity.enable_global_permission()
@@ -73,7 +74,7 @@ async def handle_start(interface: Annotated[OmMI, Depends(OmMI.depend())]):
 
 
 @omega.command('disable', aliases={'DisableOmega', 'disable_omega'}, permission=IS_ADMIN).handle()
-async def handle_disable(interface: Annotated[OmMI, Depends(OmMI.depend())]):
+async def handle_disable(interface: EVENT_MATCHER_INTERFACE):
     try:
         await interface.entity.add_ignore_exists()
         await interface.entity.disable_global_permission()
@@ -88,7 +89,7 @@ async def handle_disable(interface: Annotated[OmMI, Depends(OmMI.depend())]):
 
 
 @omega.command('status', aliases={'Status', 'status'}, permission=None, priority=10).handle()
-async def handle_status(interface: Annotated[OmMI, Depends(OmMI.depend())]):
+async def handle_status(interface: EVENT_MATCHER_INTERFACE):
     try:
         global_permission = await interface.entity.query_global_permission()
         global_permission_text = '已启用(Enabled)' if global_permission.available == 1 else '已禁用(Disabled)'
@@ -125,7 +126,7 @@ async def handle_help(
     'set-level', aliases={'SetOmegaLevel', 'set_omega_level'}, handlers=[handle_parse_args], permission=IS_ADMIN
 ).got('omega_arg_0', prompt='请输入需要设定的权限等级:')
 async def handle_set_level(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         level_str: Annotated[str, ArgStr('omega_arg_0')]
 ) -> None:
     level_str = level_str.strip()
@@ -268,7 +269,7 @@ allow_plugin_node = omega.command(
 @allow_plugin_node.got('omega_arg_0', prompt='请输入需要配置的插件名称:')
 @allow_plugin_node.got('omega_arg_1', prompt='请输入需要配置的权限节点:')
 async def handle_allow_plugin_node(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         plugin_name: Annotated[str, ArgStr('omega_arg_0')],
         auth_node: Annotated[str, ArgStr('omega_arg_1')]
 ) -> None:
@@ -283,7 +284,7 @@ deny_plugin_node = omega.command(
 @deny_plugin_node.got('omega_arg_0', prompt='请输入需要配置的插件名称:')
 @deny_plugin_node.got('omega_arg_1', prompt='请输入需要配置的权限节点:')
 async def handle_deny_plugin_node(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         plugin_name: Annotated[str, ArgStr('omega_arg_0')],
         auth_node: Annotated[str, ArgStr('omega_arg_1')]
 ) -> None:
@@ -324,7 +325,7 @@ async def handle_config_plugin_node(
 
 
 @omega.command('list-configured-auth', aliases={'ListOmegaConfiguredAuth', 'list_omega_configured_auth'}).handle()
-async def handle_list_configured_auth(interface: Annotated[OmMI, Depends(OmMI.depend())]) -> None:
+async def handle_list_configured_auth(interface: EVENT_MATCHER_INTERFACE) -> None:
     try:
         auth_settings = await interface.entity.query_all_auth_setting()
         auth_text = '\n'.join(f'{x.available} | {x.plugin}:{x.node}' for x in auth_settings)
@@ -338,7 +339,7 @@ async def handle_list_configured_auth(interface: Annotated[OmMI, Depends(OmMI.de
     'set-limiting', aliases={'SetOmegaLimiting', 'set_omega_limiting'}, handlers=[handle_parse_args]
 ).got('omega_arg_0', prompt='请输入限制时间(秒):')
 async def handle_set_limiting(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         time_str: Annotated[str, ArgStr('omega_arg_0')]
 ) -> None:
     time_str = time_str.strip()

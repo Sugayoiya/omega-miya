@@ -14,11 +14,11 @@ from datetime import timedelta
 from typing import Annotated
 
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.plugin import CommandGroup
 
+from src.params.depends import EVENT_MATCHER_INTERFACE, USER_MATCHER_INTERFACE
 from src.params.handler import get_command_str_single_arg_parser_handler, get_set_default_state_handler
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import enable_processor_state
 from .model import RandomDice
 
@@ -39,7 +39,7 @@ roll = CommandGroup(
     handlers=[get_command_str_single_arg_parser_handler('expression')],
 ).got('expression', prompt='请掷骰子: <骰子个数>D<骰子面数>')
 async def handle_roll(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         expression: Annotated[str, ArgStr('expression')],
 ) -> None:
     expression = expression.strip()
@@ -80,7 +80,7 @@ async def handle_roll(
     handlers=[get_command_str_single_arg_parser_handler('expression')],
 ).got('expression', prompt='请掷骰子: AdB(kq)C(pb)DaE')
 async def handle_roll_dice(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         expression: Annotated[str, ArgStr('expression')],
 ) -> None:
     expression = expression.strip()
@@ -103,7 +103,7 @@ async def handle_roll_dice(
     handlers=[get_command_str_single_arg_parser_handler('attr')],
 ).got('attr', prompt='请输入需要检定的属性/技能名')
 async def handle_roll_attr(
-        interface: Annotated[OmMI, Depends(OmMI.depend('user'))],
+        interface: USER_MATCHER_INTERFACE,
         attr: Annotated[str, ArgStr('attr')],
 ) -> None:
     attr = attr.strip()
@@ -144,7 +144,7 @@ async def handle_roll_attr(
     handlers=[get_command_str_single_arg_parser_handler('attr')],
 ).got('attr', prompt='请输入需要随机的属性/技能名')
 async def handle_roll_set_attr(
-        interface: Annotated[OmMI, Depends(OmMI.depend('user'))],
+        interface: USER_MATCHER_INTERFACE,
         attr: Annotated[str, ArgStr('attr')],
 ) -> None:
     attr = attr.strip()
@@ -177,7 +177,7 @@ async def handle_roll_set_attr(
     handlers=[get_command_str_single_arg_parser_handler('attr')],
 ).got('attr', prompt='请输入需要移除的属性/技能名')
 async def handle_roll_clear_attr(
-        interface: Annotated[OmMI, Depends(OmMI.depend('user'))],
+        interface: USER_MATCHER_INTERFACE,
         attr: Annotated[str, ArgStr('attr')],
 ) -> None:
     attr = attr.strip()
@@ -207,7 +207,7 @@ async def handle_roll_clear_attr(
     handlers=[get_set_default_state_handler('ensure', value=None)],
 ).got('ensure')
 async def handle_roll_clear_all_attr(
-        interface: Annotated[OmMI, Depends(OmMI.depend('user'))],
+        interface: USER_MATCHER_INTERFACE,
         ensure: Annotated[str | None, ArgStr('ensure')],
 ) -> None:
     if ensure is None:
@@ -225,7 +225,7 @@ async def handle_roll_clear_all_attr(
 
 
 @roll.command('show', aliases={'rlsa'}).handle()
-async def handle_show_attr(interface: Annotated[OmMI, Depends(OmMI.depend('user'))]) -> None:
+async def handle_show_attr(interface: USER_MATCHER_INTERFACE) -> None:
     try:
         attrs = await interface.entity.query_all_character_attribute()
         attrs_msg = '\n'.join(f'{attr.node}={attr.value}' for attr in attrs)

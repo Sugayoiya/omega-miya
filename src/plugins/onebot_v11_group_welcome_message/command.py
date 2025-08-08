@@ -10,28 +10,20 @@
 
 from typing import Annotated, Literal
 
-from nonebot.adapters.onebot.v11 import (
-    Bot as OneBotV11Bot,
-)
-from nonebot.adapters.onebot.v11 import (
-    GroupIncreaseNoticeEvent as OneBotV11GroupIncreaseNoticeEvent,
-)
-from nonebot.adapters.onebot.v11 import (
-    GroupMessageEvent as OneBotV11GroupMessageEvent,
-)
-from nonebot.adapters.onebot.v11 import (
-    Message as OneBotV11Message,
-)
+from nonebot.adapters.onebot.v11 import Bot as OneBotV11Bot
+from nonebot.adapters.onebot.v11 import GroupIncreaseNoticeEvent as OneBotV11GroupIncreaseNoticeEvent
+from nonebot.adapters.onebot.v11 import GroupMessageEvent as OneBotV11GroupMessageEvent
+from nonebot.adapters.onebot.v11 import Message as OneBotV11Message
 from nonebot.adapters.onebot.v11.permission import GROUP_ADMIN, GROUP_OWNER
 from nonebot.log import logger
-from nonebot.params import Arg, Depends
+from nonebot.params import Arg
 from nonebot.permission import SUPERUSER
 from nonebot.plugin import CommandGroup, on_notice
 from sqlalchemy.exc import NoResultFound
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_message_arg_parser_handler
 from src.params.rule import event_has_permission_level
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import OmegaMessage, OmegaMessageTransfer, enable_processor_state
 
 _SETTING_NAME: Literal['group_welcome_message'] = 'group_welcome_message'
@@ -54,7 +46,7 @@ welcome_message_manager = CommandGroup(
 ).got('welcome_message', prompt='请输入要设置的群欢迎消息:')
 async def handle_set_welcome_message(
         _: OneBotV11GroupMessageEvent,
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         message: Annotated[OneBotV11Message, Arg('welcome_message')],
 ) -> None:
     if interface.matcher.plugin is None:
@@ -79,7 +71,7 @@ async def handle_set_welcome_message(
 @welcome_message_manager.command('remove', aliases={'删除欢迎消息', '移除欢迎消息', '取消欢迎消息'}).handle()
 async def handle_remove_welcome_message(
         _: OneBotV11GroupMessageEvent,
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
 ) -> None:
     if interface.matcher.plugin is None:
         await interface.matcher.finish()
@@ -108,7 +100,7 @@ async def handle_remove_welcome_message(
 async def handle_send_welcome_message(
         _: OneBotV11Bot,
         event: OneBotV11GroupIncreaseNoticeEvent,
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
 ) -> None:
     if interface.matcher.plugin is None:
         await interface.matcher.finish()

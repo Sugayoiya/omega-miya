@@ -18,13 +18,13 @@ from nonebot.adapters.onebot.v11 import MessageSegment as OneBotV11MessageSegmen
 from nonebot.adapters.onebot.v11.permission import GROUP_ADMIN, GROUP_OWNER
 from nonebot.log import logger
 from nonebot.matcher import Matcher
-from nonebot.params import ArgStr, CommandArg, Depends
+from nonebot.params import ArgStr, CommandArg
 from nonebot.permission import SUPERUSER
 from nonebot.plugin import on_command, on_notice
 from nonebot.typing import T_State
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.rule import event_has_permission_node
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import enable_processor_state
 from .config import onebot_v11_anti_recall_config
 from .helpers import query_message_from_adapter, query_message_from_database
@@ -55,7 +55,7 @@ async def handle_parse_switch(_: OneBotV11Bot, state: T_State, cmd_arg: Annotate
 ).got('switch', prompt='启用或关闭反撤回:\n【ON/OFF】')
 async def handle_set_anti_recall(
         _: OneBotV11GroupMessageEvent,
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         switch: Annotated[str, ArgStr('switch')],
 ) -> None:
     switch = switch.strip().lower()

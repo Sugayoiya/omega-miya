@@ -11,11 +11,11 @@
 from typing import Annotated
 
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.plugin import on_command
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_str_single_arg_parser_handler
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import OmegaMessageSegment, enable_processor_state
 from .data_source import get_http_cat
 
@@ -29,7 +29,7 @@ from .data_source import get_http_cat
     state=enable_processor_state(name='HttpCat', level=20),
 ).got('code', prompt='猫猫已就绪, 请输入 Http 状态码:')
 async def handle_httpcat(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         code: Annotated[str, ArgStr('code')],
 ) -> None:
     code = code.strip()

@@ -11,12 +11,12 @@
 from typing import Annotated
 
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends, ShellCommandArgs
+from nonebot.params import ArgStr, ShellCommandArgs
 from nonebot.plugin import CommandGroup
 from nonebot.rule import Namespace
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_str_single_arg_parser_handler, get_shell_command_parse_failed_handler
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import OmegaMessageSegment, enable_processor_state
 from src.utils.comic18 import Comic18
 from .helper import format_album_desc_msg, get_searching_argument_parser, parse_from_searching_parser
@@ -39,7 +39,7 @@ jm = CommandGroup(
     handlers=[get_command_str_single_arg_parser_handler('aid')],
 ).got('aid', prompt='想要查看哪个作品呢? 请输入作品ID:')
 async def handle_preview_album_info(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         aid: Annotated[str, ArgStr('aid')],
 ) -> None:
     aid = aid.lower().strip().removeprefix('jm')
@@ -62,7 +62,7 @@ async def handle_preview_album_info(
     handlers=[get_command_str_single_arg_parser_handler('aid')],
 ).got('aid', prompt='想要查看哪个作品呢? 请输入作品ID:')
 async def handle_preview_gallery(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         aid: Annotated[str, ArgStr('aid')],
 ) -> None:
     aid = aid.lower().strip().removeprefix('jm')
@@ -86,7 +86,7 @@ async def handle_preview_gallery(
     handlers=[get_shell_command_parse_failed_handler()],
 ).handle()
 async def handle_jm_searching(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         args: Annotated[Namespace, ShellCommandArgs()],
 ) -> None:
     searching_args = parse_from_searching_parser(args=args)

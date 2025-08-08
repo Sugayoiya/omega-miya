@@ -14,10 +14,11 @@ from typing import Annotated
 from nonebot.adapters import Bot as BaseBot
 from nonebot.adapters import Event as BaseEvent
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.permission import SUPERUSER
 from nonebot.plugin import CommandGroup
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_str_single_arg_parser_handler
 from src.service import OmegaMatcherInterface as OmMI
 from src.service import OmegaMessageSegment, enable_processor_state
@@ -40,7 +41,7 @@ wordcloud = CommandGroup(
     permission=SUPERUSER
 ).got('content', prompt='请输入需要添加的词语或短语:')
 async def handle_add_user_dict(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         content: Annotated[str, ArgStr('content')],
 ) -> None:
     content = content.strip()
@@ -56,7 +57,7 @@ async def handle_add_user_dict(
 async def handle_daily_wordcloud(
         bot: BaseBot,
         event: BaseEvent,
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
 ) -> None:
     start_time = datetime.now() - timedelta(days=1)
     desc_text = '自一天前以来的消息词云'
@@ -69,7 +70,7 @@ async def handle_daily_wordcloud(
 async def handle_weekly_wordcloud(
         bot: BaseBot,
         event: BaseEvent,
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
 ) -> None:
     start_time = datetime.now() - timedelta(days=7)
     desc_text = '自一周前以来的消息词云'
@@ -82,7 +83,7 @@ async def handle_weekly_wordcloud(
 async def handle_monthly_wordcloud(
         bot: BaseBot,
         event: BaseEvent,
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
 ) -> None:
     start_time = datetime.now() - timedelta(days=30)
     desc_text = '自一个月前以来的消息词云'
@@ -95,7 +96,7 @@ async def handle_monthly_wordcloud(
 async def handle_my_daily_wordcloud(
         bot: BaseBot,
         event: BaseEvent,
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
 ) -> None:
     start_time = datetime.now() - timedelta(days=1)
     desc_text = f'{interface.get_event_user_nickname()}的今日词云'
@@ -108,7 +109,7 @@ async def handle_my_daily_wordcloud(
 async def handle_my_weekly_wordcloud(
         bot: BaseBot,
         event: BaseEvent,
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
 ) -> None:
     start_time = datetime.now() - timedelta(days=7)
     desc_text = f'{interface.get_event_user_nickname()}的本周词云'
@@ -121,7 +122,7 @@ async def handle_my_weekly_wordcloud(
 async def handle_my_monthly_wordcloud(
         bot: BaseBot,
         event: BaseEvent,
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
 ) -> None:
     start_time = datetime.now() - timedelta(days=30)
     desc_text = f'{interface.get_event_user_nickname()}的本月词云'

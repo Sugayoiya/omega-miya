@@ -12,12 +12,12 @@ import random
 from typing import Annotated
 
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.plugin import on_command
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_str_single_arg_parser_handler
 from src.params.permission import IS_ADMIN
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import OmegaMessageSegment, enable_processor_state
 from .helper import generate_tarot_card, get_tarot_resource_name, set_tarot_resource
 from .resources import get_available_tarot_resource, get_tarot_resource
@@ -32,7 +32,7 @@ from .resources import get_available_tarot_resource, get_tarot_resource
     state=enable_processor_state(name='Tarot', level=10),
 ).got('card_name', prompt='你想要看哪张塔罗牌呢?')
 async def handle_show_tarot(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         card_name: Annotated[str | None, ArgStr('card_name')],
 ) -> None:
     resource_name = await get_tarot_resource_name(interface=interface)
@@ -81,7 +81,7 @@ async def handle_show_tarot(
     state=enable_processor_state(name='SetTarotResource', level=10),
 ).got('resource_name', prompt='请输入想要配置的塔罗牌组名称:')
 async def handle_set_tarot_resource(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         resource_name: Annotated[str | None, ArgStr('resource_name')],
 ) -> None:
     resource_msg = '\n'.join(get_available_tarot_resource())

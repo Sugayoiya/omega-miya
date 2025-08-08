@@ -11,11 +11,11 @@
 from typing import Annotated
 
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.plugin import on_command
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_str_single_arg_parser_handler
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import enable_processor_state
 from .config import nbnhhsh_plugin_config
 from .data_source import ai_guess, simple_guess
@@ -30,7 +30,7 @@ from .data_source import ai_guess, simple_guess
     state=enable_processor_state(name='nbnhhsh', level=30, cooldown=30),
 ).got('guess_word')
 async def handle_guess(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         guess_word: Annotated[str | None, ArgStr('guess_word')],
 ) -> None:
     msg_images = interface.get_event_reply_msg_image_urls() + interface.get_event_msg_image_urls()

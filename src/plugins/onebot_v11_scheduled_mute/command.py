@@ -10,18 +10,14 @@
 
 from typing import Annotated
 
-from nonebot.adapters.onebot.v11 import (
-    Bot as OneBotV11Bot,
-)
-from nonebot.adapters.onebot.v11 import (
-    GroupMessageEvent as OneBotV11GroupMessageEvent,
-)
+from nonebot.adapters.onebot.v11 import Bot as OneBotV11Bot
+from nonebot.adapters.onebot.v11 import GroupMessageEvent as OneBotV11GroupMessageEvent
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.plugin import CommandGroup
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.permission import IS_ADMIN
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import enable_processor_state
 from .helpers import (
     add_schedule_job,
@@ -34,7 +30,7 @@ from .helpers import (
 async def _check_bot_role(
         bot: OneBotV11Bot,
         event: OneBotV11GroupMessageEvent,
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
 ) -> None:
     try:
         bot_role = await bot.get_group_member_info(group_id=event.group_id, user_id=int(bot.self_id))
@@ -66,7 +62,7 @@ set_ = schedule_group_mute.command(
 async def handle_set_schedule_group_mute(
         _bot: OneBotV11Bot,
         _event: OneBotV11GroupMessageEvent,
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         crontab_enable: Annotated[str, ArgStr('crontab_enable')],
         crontab_disable: Annotated[str, ArgStr('crontab_disable')],
 ) -> None:
@@ -102,7 +98,7 @@ async def handle_set_schedule_group_mute(
 async def handle_remove_schedule_group_mute(
         _bot: OneBotV11Bot,
         _event: OneBotV11GroupMessageEvent,
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
 ) -> None:
     try:
         await remove_schedule_group_mute_job(interface=interface)

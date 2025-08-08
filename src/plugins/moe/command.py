@@ -13,12 +13,12 @@ from copy import deepcopy
 from typing import Annotated
 
 from nonebot.log import logger
-from nonebot.params import Depends, ShellCommandArgs
+from nonebot.params import ShellCommandArgs
 from nonebot.plugin import on_shell_command
 from nonebot.rule import Namespace
 
+from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_shell_command_parse_failed_handler
-from src.service import OmegaMatcherInterface as OmMI
 from src.service import enable_processor_state
 from src.utils import semaphore_gather
 from .config import moe_plugin_config
@@ -48,7 +48,7 @@ from .helpers import (
     ),
 ).handle()
 async def handle_setu(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         args: Annotated[Namespace, ShellCommandArgs()],
 ) -> None:
     """解析命令成功"""
@@ -124,7 +124,7 @@ async def handle_setu(
     ),
 ).handle()
 async def handle_moe(
-        interface: Annotated[OmMI, Depends(OmMI.depend())],
+        interface: EVENT_MATCHER_INTERFACE,
         args: Annotated[Namespace, ShellCommandArgs()]
 ) -> None:
     """解析命令成功"""

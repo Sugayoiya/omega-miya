@@ -13,10 +13,10 @@ from datetime import datetime
 from typing import Annotated
 
 from nonebot.log import logger
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.typing import T_State
 
-from src.service import OmegaMatcherInterface as OmMI
+from src.params.depends import USER_MATCHER_INTERFACE
 from src.service import OmegaMessageSegment
 from src.service.omega_message_context.custom_depends import ARTWORK_CONTEXT_MANAGER
 from .config import sign_in_config
@@ -25,7 +25,7 @@ from .helpers import generate_signin_card, get_hitokoto, get_profile_image, get_
 
 
 async def handle_generate_sign_in_card(
-        interface: Annotated[OmMI, Depends(OmMI.depend('user'))],
+        interface: USER_MATCHER_INTERFACE,
         state: T_State,
 ) -> None:
     """处理用户签到, 生成签到卡片"""
@@ -121,7 +121,7 @@ async def handle_generate_sign_in_card(
 
 
 async def handle_generate_fortune_card(
-        interface: Annotated[OmMI, Depends(OmMI.depend('user'))],
+        interface: USER_MATCHER_INTERFACE,
         state: T_State,
 ) -> None:
     """处理用户重复签到及今日运势, 生成运势卡片"""
@@ -180,7 +180,7 @@ async def handle_generate_fortune_card(
 
 
 async def handle_fix_sign_in(
-        interface: Annotated[OmMI, Depends(OmMI.depend('user'))],
+        interface: USER_MATCHER_INTERFACE,
         ensure: Annotated[str | None, ArgStr('sign_in_ensure')],
         state: T_State,
 ) -> None:
