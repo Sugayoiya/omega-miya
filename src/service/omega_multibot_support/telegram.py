@@ -8,16 +8,12 @@
 @Software       : PyCharm
 """
 
-from typing import Annotated
-
 from nonebot.adapters.telegram.bot import Bot
 from nonebot.log import logger
 from nonebot.message import event_preprocessor
-from nonebot.params import Depends
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.database import BotSelfDAL, get_db_session
+from src.database import BOT_SELF_DAL
 from src.service.omega_base.event import BotConnectEvent, BotDisconnectEvent
 
 
@@ -25,13 +21,11 @@ from src.service.omega_base.event import BotConnectEvent, BotDisconnectEvent
 async def __telegram_bot_connect(
         bot: Bot,
         event: BotConnectEvent,
-        session: Annotated[AsyncSession, Depends(get_db_session)]
+        bot_dal: BOT_SELF_DAL,
 ) -> None:
     """处理 Telegram Bot 连接事件"""
     if not str(bot.self_id) == str(event.bot_id):
         raise ValueError('Bot self_id not match BotActionEvent bot_id')
-
-    bot_dal = BotSelfDAL(session=session)
 
     # 更新 bot 状态
     bot_info = await bot.get_me()
@@ -50,13 +44,12 @@ async def __telegram_bot_connect(
 async def __telegram_bot_disconnect(
         bot: Bot,
         event: BotDisconnectEvent,
-        session: Annotated[AsyncSession, Depends(get_db_session)]
+        bot_dal: BOT_SELF_DAL,
 ) -> None:
     """处理 Telegram Bot 断开连接事件"""
     if not str(bot.self_id) == str(event.bot_id):
         raise ValueError('Bot self_id not match BotActionEvent bot_id')
 
-    bot_dal = BotSelfDAL(session)
     try:
         exist_bot = await bot_dal.query_unique(self_id=bot.self_id)
         await bot_dal.update(id_=exist_bot.id, bot_type=event.bot_type, bot_status=0)

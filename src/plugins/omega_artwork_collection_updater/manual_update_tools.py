@@ -13,14 +13,14 @@ from typing import Annotated
 
 from nonebot.log import logger
 from nonebot.matcher import Matcher
-from nonebot.params import ArgStr, Depends
+from nonebot.params import ArgStr
 from nonebot.permission import SUPERUSER
 from nonebot.plugin import on_command
 from nonebot.rule import to_me
 from pydantic import BaseModel, ConfigDict
 
 from src.compat import parse_json_as
-from src.database import ArtworkCollectionDAL
+from src.database import ARTWORK_COLLECTION_DAL
 from src.exception import WebSourceException
 from src.params.handler import get_command_str_single_arg_parser_handler
 from src.resource import TemporaryResource
@@ -121,7 +121,7 @@ async def handle_import_collected_artworks(matcher: Matcher) -> None:
 ).got('origins')
 async def handle_artwork_collection_statistics(
         matcher: Matcher,
-        dal: Annotated[ArtworkCollectionDAL, Depends(ArtworkCollectionDAL.dal_dependence)],
+        dal: ARTWORK_COLLECTION_DAL,
         origins: Annotated[str | None, ArgStr('origins')],
 ) -> None:
     if origins is None:

@@ -8,21 +8,17 @@
 @Software       : PyCharm
 """
 
-from typing import Annotated
-
 from nonebot.adapters.onebot.v11.bot import Bot
 from nonebot.adapters.onebot.v11.event import Event
 from nonebot.exception import AdapterException, IgnoredException
 from nonebot.log import logger
 from nonebot.message import event_preprocessor, run_preprocessor
-from nonebot.params import Depends
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.compat import AnyHttpUrlStr as AnyHttpUrl
 from src.compat import parse_obj_as
-from src.database import BotSelfDAL, EntityDAL, get_db_session
+from src.database import BOT_SELF_DAL, DATABASE_SESSION, BotSelfDAL, EntityDAL
 from src.service.omega_base.event import BotConnectEvent, BotDisconnectEvent
 
 
@@ -185,7 +181,7 @@ class VersionInfo(BaseOneBotModel):
 async def __obv11_bot_connect(
         bot: Bot,
         event: BotConnectEvent,
-        session: Annotated[AsyncSession, Depends(get_db_session)]
+        session: DATABASE_SESSION,
 ) -> None:
     """处理 OneBot V11(go-cqhttp) Bot 连接事件"""
     if not str(bot.self_id) == str(event.bot_id):
@@ -319,13 +315,12 @@ async def __obv11_bot_connect(
 async def __obv11_bot_disconnect(
         bot: Bot,
         event: BotDisconnectEvent,
-        session: Annotated[AsyncSession, Depends(get_db_session)]
+        bot_dal: BOT_SELF_DAL,
 ) -> None:
     """处理 OneBot V11(go-cqhttp) Bot 断开连接事件"""
     if not str(bot.self_id) == str(event.bot_id):
         raise ValueError('Bot self_id not match BotActionEvent bot_id')
 
-    bot_dal = BotSelfDAL(session)
     try:
         exist_bot = await bot_dal.query_unique(self_id=bot.self_id)
         await bot_dal.update(id_=exist_bot.id, bot_type=event.bot_type, bot_status=0)

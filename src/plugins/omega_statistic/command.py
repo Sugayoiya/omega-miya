@@ -8,14 +8,11 @@
 @Software       : PyCharm
 """
 
-from typing import Annotated
-
 from nonebot.log import logger
-from nonebot.params import Depends
 from nonebot.permission import SUPERUSER
 from nonebot.plugin import CommandGroup
 
-from src.database import StatisticDAL
+from src.database import STATISTIC_DAL
 from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.service import OmegaMessageSegment, enable_processor_state
 from .helpers import draw_statistics
@@ -32,7 +29,7 @@ statistic = CommandGroup(
 @statistic.command('event-entity', aliases={'统计信息', '使用统计', '插件统计'}).handle()
 async def handle_event_entity_statistic(
         interface: EVENT_MATCHER_INTERFACE,
-        statistic_dal: Annotated[StatisticDAL, Depends(StatisticDAL.dal_dependence)],
+        statistic_dal: STATISTIC_DAL,
 ) -> None:
     try:
         statistic_data = await statistic_dal.count_by_condition(
@@ -53,7 +50,7 @@ async def handle_event_entity_statistic(
 @statistic.command('bot-all', permission=SUPERUSER).handle()
 async def handle_bot_all_statistic(
         interface: EVENT_MATCHER_INTERFACE,
-        statistic_dal: Annotated[StatisticDAL, Depends(StatisticDAL.dal_dependence)],
+        statistic_dal: STATISTIC_DAL,
 ) -> None:
     try:
         statistic_data = await statistic_dal.count_by_condition(bot_self_id=interface.bot.self_id)

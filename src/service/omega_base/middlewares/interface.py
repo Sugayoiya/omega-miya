@@ -11,20 +11,18 @@
 import asyncio
 import inspect
 from collections.abc import AsyncGenerator, Callable, Coroutine
-from contextlib import asynccontextmanager
 from functools import wraps
 from types import TracebackType
-from typing import TYPE_CHECKING, Annotated, Any, Concatenate, NoReturn, Self
+from typing import TYPE_CHECKING, Any, Concatenate, NoReturn, Self
 
 from nonebot.adapters import Bot as BaseBot
 from nonebot.adapters import Event as BaseEvent
 from nonebot.exception import FinishedException, PausedException, RejectedException
 from nonebot.log import logger
 from nonebot.matcher import Matcher, current_bot, current_event, current_matcher
-from nonebot.params import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.database import begin_db_session, get_db_session
+from src.database import DATABASE_SESSION
 from .const import SupportedPlatform, SupportedTarget
 from .exception import AdapterNotSupported, TargetNotSupported
 from .platform_interface import entity_target_register, event_depend_register, message_builder_register
@@ -177,14 +175,6 @@ class OmegaMatcherInterface:
     ) -> bool | None:
         """Exit the matcher interface context waiting for session completion."""
 
-    @asynccontextmanager
-    async def restart_new_session(self, acquire_type: EntityAcquireType = 'event') -> AsyncGenerator[Self, None]:
-        """使用当前参数重新开始新 session"""
-        async with begin_db_session() as session:
-            yield self.__class__(
-                bot=self.bot, event=self.event, matcher=self.matcher, session=session, acquire_type=acquire_type
-            )
-
     @classmethod
     def get_entity(
             cls,
@@ -215,7 +205,7 @@ class OmegaMatcherInterface:
                 bot: BaseBot,
                 event: BaseEvent,
                 matcher: Matcher,
-                session: Annotated[AsyncSession, Depends(get_db_session)],
+                session: DATABASE_SESSION,
         ) -> AsyncGenerator[Self, None]:
             async with cls(
                     bot=bot,

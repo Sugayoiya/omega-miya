@@ -16,12 +16,12 @@ from nonebot.adapters import Event as BaseEvent
 from nonebot.adapters import Message as BaseMessage
 from nonebot.log import logger
 from nonebot.matcher import Matcher
-from nonebot.params import ArgStr, CommandArg, Depends
+from nonebot.params import ArgStr, CommandArg
 from nonebot.permission import SUPERUSER
 from nonebot.plugin import CommandGroup, get_loaded_plugins, get_plugin
 from nonebot.typing import T_State
 
-from src.database import PluginDAL
+from src.database import PLUGIN_DAL
 from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.permission import IS_ADMIN
 from src.service import OmegaMatcherInterface as OmMI
@@ -154,7 +154,7 @@ async def handle_list_commands(matcher: Matcher):
 
 
 @omega.command('list-plugins', aliases={'ListOmegaPlugins', 'list_omega_plugins'}).handle()
-async def handle_list_plugins(matcher: Matcher, plugin_dal: Annotated[PluginDAL, Depends(PluginDAL.dal_dependence)]):
+async def handle_list_plugins(matcher: Matcher, plugin_dal: PLUGIN_DAL):
     def _desc(plugin_name: str) -> str:
         """根据 plugin name 获取插件自定义名称"""
         plugin = get_plugin(plugin_id=plugin_name)
@@ -190,8 +190,8 @@ async def handle_list_plugins(matcher: Matcher, plugin_dal: Annotated[PluginDAL,
 ).got('omega_arg_0', prompt='请输入需要启用的插件名称:')
 async def handle_enable_plugin(
         matcher: Matcher,
-        plugin_dal: Annotated[PluginDAL, Depends(PluginDAL.dal_dependence)],
-        plugin_name: Annotated[str, ArgStr('omega_arg_0')]
+        plugin_dal: PLUGIN_DAL,
+        plugin_name: Annotated[str, ArgStr('omega_arg_0')],
 ) -> None:
     plugin_name = plugin_name.strip()
     if plugin_name not in (x.name for x in get_loaded_plugins()):
@@ -221,8 +221,8 @@ async def handle_enable_plugin(
 ).got('omega_arg_0', prompt='请输入需要禁用的插件名称:')
 async def handle_disable_plugin(
         matcher: Matcher,
-        plugin_dal: Annotated[PluginDAL, Depends(PluginDAL.dal_dependence)],
-        plugin_name: Annotated[str, ArgStr('omega_arg_0')]
+        plugin_dal: PLUGIN_DAL,
+        plugin_name: Annotated[str, ArgStr('omega_arg_0')],
 ) -> None:
     plugin_name = plugin_name.strip()
     if plugin_name not in (x.name for x in get_loaded_plugins()):

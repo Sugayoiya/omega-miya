@@ -12,12 +12,12 @@ from typing import Annotated
 
 from nonebot.adapters import Message as BaseMessage
 from nonebot.log import logger
-from nonebot.params import Arg, Depends
+from nonebot.params import Arg
 from nonebot.permission import SUPERUSER
 from nonebot.plugin import on_command
 from nonebot.rule import to_me
 
-from src.database import EntityDAL
+from src.database import ENTITY_DAL
 from src.params.depends import EVENT_MATCHER_INTERFACE
 from src.params.handler import get_command_message_arg_parser_handler
 from src.service import OmegaEntity, enable_processor_state
@@ -37,7 +37,7 @@ from src.utils import semaphore_gather
 ).got('announcement_content', prompt='请输入公告内容:')
 async def handle_announce(
         interface: EVENT_MATCHER_INTERFACE,
-        entity_dal: Annotated[EntityDAL, Depends(EntityDAL.dal_dependence)],
+        entity_dal: ENTITY_DAL,
         announcement_content: Annotated[BaseMessage, Arg('announcement_content')]
 ) -> None:
     announce_message = interface.get_message_extractor()(message=announcement_content).message
